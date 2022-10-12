@@ -116,7 +116,7 @@ class GeneralizedRcnnPlainPredictor(ProbabilisticPredictor):
             box_features = self.model.roi_heads.box_pooler(features, [x.proposal_boxes for x in proposals])
             box_features = self.model.roi_heads.box_head(box_features)
             predictions = self.model.roi_heads.box_predictor(box_features)
-            # projections = self.model.roi_heads.projection_head(box_features)
+            projections = self.model.roi_heads.projection_head(box_features)
 
             box_cls = predictions[0]
             box_delta = predictions[1]
@@ -125,8 +125,8 @@ class GeneralizedRcnnPlainPredictor(ProbabilisticPredictor):
             raw_output.update({'box_cls': box_cls,
                                'box_delta': box_delta,
                                'box_cls_var': box_cls_var,
-                               'box_reg_var': box_reg_var,})
-                               # 'projections': projections})
+                               'box_reg_var': box_reg_var,
+                               'projections': projections})
             outputs = raw_output
             ####
 
@@ -168,28 +168,11 @@ class GeneralizedRcnnPlainPredictor(ProbabilisticPredictor):
             box_delta, proposal_boxes)
         boxes_covars = []
 
-        # binary_cls_filtered = binary_cls[filter_inds[:,0]]
-        # import ipdb; ipdb.set_trace();
-        # add binary_cls filtered to last two columns of inter_feat
-        # inter_feat = torch.hstack((inter_feat, binary_cls_filtered))
-        # inter_feat = torch.hstack((binary_cls_filtered, inter_feat))
-        # projections_filtered = projections[filter_inds[:,0]]
-        distances_from_normalized_vectors = torch.cdist(
-            F.normalize(box_features), F.normalize(self.model.roi_heads.prototypes), p=2.0,
-            compute_mode="donot_use_mm_for_euclid_dist") / math.sqrt(2.0)
-        isometric_distances = torch.abs(self.model.roi_heads.distance_scale) * distances_from_normalized_vectors
-        projections_filtered = -(isometric_distances + isometric_distances.mean(dim=1, keepdim=True))
 
-        # probabilities = torch.nn.Softmax(dim=1)(logits)
-        # scores = logits.max(dim=1)[0] + logits.mean(dim=1) + (probabilities * torch.log(probabilities)).sum(dim=1)
-        # projections_filtered = scores[filter_inds[:, 0]]
-        #binary_output = {"binary_cls": binary_cls_filtered, "classes": det_labels}
-        # np.save("/u/g/o/gozum/private/OOD_research/vosV2/detection/data/VOC-Detection/faster-rcnn/vosV2LossBoth/random_seed_0/inference/voc_custom_val/standard_nms/corruption_level_0/binary_outputs/" + str(i[0]) + ".npy", binary_output)
+        projections_filtered = projections[filter_inds[:,0]]
 
-        # np.save("/u/g/o/gozum/private/OOD_research/vosV2/detection/data/VOC-Detection/faster-rcnn/vosV2LossBoth/random_seed_0/inference/coco_ood_val/standard_nms/corruption_level_0/binary_outputs/" + str(i[0]) + ".npy", binary_output)
-        i[0]+=1
 
-        # TODO: projections_filtered is being saved as the binary_cls for the meantime - will need to refactor code
+
 
         return boxes, boxes_covars, scores, inter_feat, filter_inds[:,
                                                         1], box_cls[filter_inds[:, 0]], det_labels, projections_filtered

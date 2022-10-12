@@ -205,12 +205,12 @@ python apply_net.py
 ```
 Obtain the metrics by both vMF and KNN score using:
 ```
-python voc_coco_vmf.py 
---name vos 
---thres xxx 
---energy 1 
---seed 0
+python voc_coco_vmf.py --name center64_0.1 --thres xxx 
 ```
+```
+python voc_coco_knn.py --name center64_0.1 --thres xxx
+```
+
 Here the threshold is determined according to [ProbDet](https://github.com/asharakeh/probdet). It will be displayed in the screen as you finish evaluating on the in-distribution dataset.
 
 **Pretrained models**

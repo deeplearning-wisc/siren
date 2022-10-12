@@ -110,7 +110,7 @@ def add_probabilistic_config(cfg):
 
     """
     _C = cfg
-    _C.VOS = CN()
+    _C.SIREN = CN()
     # Probabilistic Modeling Setup
     _C.MODEL.PROBABILISTIC_MODELING = CN()
     _C.MODEL.PROBABILISTIC_MODELING.MC_DROPOUT = CN()
@@ -156,9 +156,9 @@ def add_probabilistic_config(cfg):
     # 'mixture_of_gaussian' or 'bayesian_inference'
     _C.PROBABILISTIC_INFERENCE.ENSEMBLES.BOX_FUSION_MODE = 'mixture_of_gaussians'
 
-    # vos args.
-    _C.VOS.SAMPLE_NUMBER = 1000
-    _C.VOS.STARTING_ITER = 12000
+    # siren args.
+    _C.SIREN.LOSS_WEIGHT = 0.1
+    _C.SIREN.PROJECTION_DIM = 32
 
 
 

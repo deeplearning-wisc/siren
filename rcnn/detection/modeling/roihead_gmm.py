@@ -528,26 +528,29 @@ class ROIHeadsLogisticGMMNew(ROIHeads):
 
         self.train_on_pred_boxes = train_on_pred_boxes
 
-        self.sample_number = self.cfg.VOS.SAMPLE_NUMBER
-        self.start_iter = self.cfg.VOS.STARTING_ITER
+        # self.sample_number = self.cfg.VOS.SAMPLE_NUMBER
+        # self.start_iter = self.cfg.VOS.STARTING_ITER
         self.iterations = self.cfg.SOLVER.MAX_ITER
-        # self.output_dir = '/nobackup/my_xfdu/BDD-Detection/faster-rcnn/center64_0.5/'
-        #
-        # self.center_loss_weight = 0.5 #1.5
-        # self.projection_dim = 64
-        #
-        # self.projection_head = nn.Sequential(
-        #                             nn.Linear(1024,self.projection_dim),
-        #                             nn.ReLU(),
-        #                             nn.Linear(self.projection_dim, self.projection_dim),
-        #                             )
-        # self.prototypes = torch.zeros((self.num_classes, self.projection_dim)).cuda()
-        # self.learnable_kappa = nn.Linear(self.num_classes, 1, bias=False).cuda()
-        # nn.init.constant(self.learnable_kappa.weight, 10)
-        self.distance_scale = nn.Parameter(torch.Tensor(1))
-        nn.init.constant_(self.distance_scale, 1.0)
-        self.prototypes = nn.Parameter(torch.Tensor(self.num_classes, 1024))
-        nn.init.normal_(self.prototypes, mean=0.0, std=1.0)
+        self.vmf_loss_weight = self.cfg.SIREN.LOSS_WEIGHT
+        self.output_dir = './saved_mean_kappa'
+
+
+        self.projection_dim = self.cfg.SIREN.PROJECTION_DIM # sometimes 32 is better. TBD
+
+        self.projection_head = nn.Sequential(
+                                    nn.Linear(1024,self.projection_dim),
+                                    nn.ReLU(),
+                                    nn.Linear(self.projection_dim, self.projection_dim),
+                                    )
+        self.prototypes = torch.zeros((self.num_classes, self.projection_dim)).cuda()
+        self.learnable_kappa = nn.Linear(self.num_classes, 1, bias=False).cuda()
+        nn.init.constant(self.learnable_kappa.weight, 10)
+
+        # dismax
+        # self.distance_scale = nn.Parameter(torch.Tensor(1))
+        # nn.init.constant_(self.distance_scale, 1.0)
+        # self.prototypes = nn.Parameter(torch.Tensor(self.num_classes, 1024))
+        # nn.init.normal_(self.prototypes, mean=0.0, std=1.0)
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -780,7 +783,7 @@ class ROIHeadsLogisticGMMNew(ROIHeads):
         box_features = self.box_head(box_features)
 
         predictions = self.box_predictor(box_features)
-        # projections =  self.projection_head(box_features)
+        projections =  self.projection_head(box_features)
 
         if self.training:
             # losses = self.box_predictor.losses(predictions, proposals)
@@ -794,8 +797,8 @@ class ROIHeadsLogisticGMMNew(ROIHeads):
             )
             gt_classes_filtered = gt_classes[gt_classes != self.num_classes].cuda()
 
-            # projections_filtered = projections[gt_classes != self.num_classes].cuda()
-            projections_filtered = box_features[gt_classes != self.num_classes].cuda()
+            projections_filtered = projections[gt_classes != self.num_classes].cuda()
+            # projections_filtered = box_features[gt_classes != self.num_classes].cuda()
 
             _log_classification_stats(scores, gt_classes)
             # self.sample_number = 10
@@ -813,127 +816,33 @@ class ROIHeadsLogisticGMMNew(ROIHeads):
                     dim=0,
                 )
 
-                # for class_i, projection in zip(gt_classes_filtered, projections_filtered):
-                #     self.prototypes.data[class_i] = F.normalize(0.05 * F.normalize(projection, p=2, dim=-1) +\
-                #                                                 0.95 * self.prototypes.data[class_i], p=2, dim=-1)
-                #
-                #
-                # cosine_logits = F.cosine_similarity(
-                #     self.prototypes.data.detach().unsqueeze(0).repeat(len(projections_filtered), 1, 1),
-                #         projections_filtered.unsqueeze(1).repeat(1, self.num_classes, 1), 2)
-                #
-                # weight_before_exp = vMFLogPartition.apply(self.projection_dim,
-                #                                           F.relu(self.learnable_kappa.weight.view(1,-1)))
-                # weight_before_exp = weight_before_exp.exp()
-                # cosine_similarity_loss = self.weighted_vmf_loss(cosine_logits *
-                #                                                 F.relu(self.learnable_kappa.weight.view(1, -1)),
-                #                             weight_before_exp, gt_classes_filtered)
-                #
-                # if iteration == self.iterations - 1:
-                #     np.save(self.output_dir + '/proto.npy', self.prototypes.cpu().data.numpy())
-                #     np.save(self.output_dir + '/kappa.npy', self.learnable_kappa.weight.cpu().data.numpy())
-                #
-                # del weight_before_exp
-
-                # dismax #
-                distances_from_normalized_vectors = torch.cdist(
-                    F.normalize(projections_filtered), F.normalize(self.prototypes), p=2.0,
-                    compute_mode="donot_use_mm_for_euclid_dist") / math.sqrt(2.0)
-                isometric_distances = torch.abs(self.distance_scale) * distances_from_normalized_vectors
-                logits = -(isometric_distances + isometric_distances.mean(dim=1, keepdim=True))
-                cosine_similarity_loss = F.cross_entropy(10 * logits, gt_classes_filtered)
-                # dismax #
-
-#                # import ipdb; ipdb.set_trace()
-#                sum_temp = 0
-#                for index in range(self.num_classes):
-#                    sum_temp += self.number_dict[index]
-#
-#                gt_classes_numpy = gt_classes_filtered.int().cpu().data.numpy()
-#                id_samples = F.normalize(projections, dim=-1, p=2)
-#
-#                lr_reg_loss = torch.zeros(1).cuda()
-#
-#                # this is never called
-#                if sum_temp == self.num_classes * self.sample_number and iteration < 0:
-#                    for index in range(len(gt_classes_numpy)):
-#                        dict_key = gt_classes_numpy[index]
-#                        self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-#                                                            id_samples[index].detach().view(1,-1)), 0)
-#
-#                elif sum_temp == self.num_classes * self.sample_number and iteration >= 0:
-#                    for index in range(len(gt_classes_numpy)):
-#                        dict_key = gt_classes_numpy[index]
-#                        self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-#                                                            id_samples[index].detach().view(1,-1)), 0)
-#
-#                    # import ipdb; ipdb.set_trace()
-#                    for index in range(self.num_classes):
-#                        temp = self.data_dict[index].mean(0)
-#                        xm_norm = (temp ** 2).sum().sqrt()
-#
-#                        # Full-batch ML estimator
-#                        mu0 = temp / xm_norm
-#                        kappa0 = (self.projection_dim * xm_norm - xm_norm ** 3) / (1 - xm_norm ** 2)
-#
-#                        vmf_true = vMF(x_dim=self.projection_dim).cuda()
-#                        vmf_true.set_params(mu=mu0, kappa=kappa0)
-#                        negative_samples = vmf_true.sample(N=self.sample_from, rsf=1)
-#                        prob_density = vmf_true(negative_samples)
-#
-#                        cur_samples, index_prob = torch.topk(-prob_density, self.select)
-#
-#                        if index == 0:
-#                            ood_samples = negative_samples.squeeze()[index_prob]
-#
-#                        else:
-#                            ood_samles = torch.cat((ood_samples, negative_samples.squeeze()[index_prob]), 0)
-#
-#                        del vmf_true
-#                        del negative_samples
-#
-#                    input_for_lr = torch.cat((self.sampling_cls_layer(id_samples),
-#                                              self.sampling_cls_layer(ood_samples)), 0)
-#                    labels_for_lr = torch.cat((torch.ones(len(id_samples)).cuda(),
-#                                               torch.zeros(len(ood_samples)).cuda()), -1)
-#
-#                    criterion_cpu = torch.nn.CrossEntropyLoss()
-#                    lr_reg_loss = criterion(input_for_lr, labels_for_lr.long())
-#
-#                else:
-#                    for index in range(len(gt_classes_numpy)):
-#                        dict_key = gt_classes_numpy[index]
-#                        if self.number_dict[dict_key] < self.sample_number:
-#                            self.data_dict[dict_key][self.number_dict[dict_key]] = id_samples[index].detach()
-#                            self.number_dict[dict_key] += 1
-#
-#            else:
-#                proposal_boxes = gt_boxes = torch.empty((0, 4), device=proposal_deltas.device)
-#
-#            loss_vmf = lr_reg_loss * self.vmf_weight
+                for class_i, projection in zip(gt_classes_filtered, projections_filtered):
+                    self.prototypes.data[class_i] = F.normalize(0.05 * F.normalize(projection, p=2, dim=-1) +\
+                                                                0.95 * self.prototypes.data[class_i], p=2, dim=-1)
 
 
-#            if sum_temp == self.num_classes * self.sample_number:
-#                losses = {
-#                    "loss_cls": cross_entropy(scores, gt_classes, reduction="mean"),
-#                    "loss_vmf": loss_vmf,
-#                    "loss_center": cosine_similarity_loss * self.center_loss_weight,
-#                    "loss_box_reg": self.box_predictor.box_reg_loss(
-#                        proposal_boxes, gt_boxes, proposal_deltas, gt_classes
-#                    ),
-#                }
-#            else:
-#                losses = {
-#                    "loss_cls": cross_entropy(scores, gt_classes, reduction="mean"),
-#                    "loss_vmf": torch.zeros(1).cuda() * (self.sampling_cls_layer.weight.sum() + self.sampling_cls_layer.bias.sum()),
-#                    "loss_center": cosine_similarity_loss * self.center_loss_weight,
-#                    "loss_box_reg": self.box_predictor.box_reg_loss(
-#                        proposal_boxes, gt_boxes, proposal_deltas, gt_classes
-#                    ),
-#                }
+                cosine_logits = F.cosine_similarity(
+                    self.prototypes.data.detach().unsqueeze(0).repeat(len(projections_filtered), 1, 1),
+                        projections_filtered.unsqueeze(1).repeat(1, self.num_classes, 1), 2)
+
+                weight_before_exp = vMFLogPartition.apply(self.projection_dim,
+                                                          F.relu(self.learnable_kappa.weight.view(1,-1)))
+                weight_before_exp = weight_before_exp.exp()
+                cosine_similarity_loss = self.weighted_vmf_loss(cosine_logits *
+                                                                F.relu(self.learnable_kappa.weight.view(1, -1)),
+                                            weight_before_exp, gt_classes_filtered)
+
+                if iteration == self.iterations - 1:
+                    np.save(self.output_dir + '/proto.npy', self.prototypes.cpu().data.numpy())
+                    np.save(self.output_dir + '/kappa.npy', self.learnable_kappa.weight.cpu().data.numpy())
+
+                del weight_before_exp
+
+
+
             losses = {
                 "loss_cls": cross_entropy(scores, gt_classes, reduction="mean"),
-                "loss_center": cosine_similarity_loss * 1.0,
+                "loss_center": cosine_similarity_loss * self.vmf_loss_weight,
                 "loss_box_reg": self.box_predictor.box_reg_loss(
                     proposal_boxes, gt_boxes, proposal_deltas, gt_classes
                 ),

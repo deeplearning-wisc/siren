@@ -59,7 +59,7 @@ def general_standard_nms_postprocessing(input_im,
     logistic_score = None
     try:
         predicted_boxes, predicted_boxes_covariance, predicted_prob, inter_feat, \
-        classes_idxs, predicted_prob_vectors, det_labels, binary_cls = outputs
+        classes_idxs, predicted_prob_vectors, det_labels, projections = outputs
     except:
         predicted_boxes, predicted_boxes_covariance, predicted_prob, inter_feat, logistic_score, \
         classes_idxs, predicted_prob_vectors, det_labels = outputs
@@ -82,8 +82,8 @@ def general_standard_nms_postprocessing(input_im,
     result.pred_cls_probs = predicted_prob_vectors[keep]
     result.inter_feat = inter_feat[keep]
     result.det_labels = det_labels[keep]
-    if binary_cls is not None:
-        result.binary_cls = binary_cls[keep]
+    if projections is not None:
+        result.projections = projections[keep]
     if logistic_score is not None:
         result.logistic_score = logistic_score[keep]
 
@@ -536,10 +536,10 @@ def instances_to_json(instances, img_id, cat_mapping_dict=None):
     scores = instances.scores.cpu().tolist()
     classes = instances.pred_classes.cpu().tolist()
     inter_feat = instances.inter_feat.cpu().tolist()
-    binary_cls = instances.binary_cls.cpu().tolist()
+    projections = instances.projections.cpu().tolist()
     if instances.has('logistic_score'):
         logistic_score = instances.logistic_score.cpu().tolist()
-    # import ipdb; ipdb.set_trace()
+
 
     classes = [
         cat_mapping_dict[class_i] if class_i in cat_mapping_dict.keys() else -
@@ -566,7 +566,7 @@ def instances_to_json(instances, img_id, cat_mapping_dict=None):
                     "logistic_score": logistic_score[k],
                     "cls_prob": pred_cls_probs[k],
                     "bbox_covar": pred_boxes_covariance[k],
-                    "binary_cls": binary_cls[k]
+                    "projections": projections[k]
                 }
             else:
                 result = {
@@ -577,7 +577,7 @@ def instances_to_json(instances, img_id, cat_mapping_dict=None):
                     "inter_feat": inter_feat[k],
                     "cls_prob": pred_cls_probs[k],
                     "bbox_covar": pred_boxes_covariance[k],
-                    "binary_cls": binary_cls[k]
+                    "projections": projections[k]
                 }
 
             results.append(result)

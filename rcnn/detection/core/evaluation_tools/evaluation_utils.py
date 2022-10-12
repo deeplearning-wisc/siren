@@ -21,7 +21,7 @@ def eval_predictions_preprocess(
         min_allowed_score=0.0,
         is_odd=False,
         is_gmm=False):
-    predicted_boxes, predicted_cls_probs, predicted_covar_mats, predicted_inter_feat, predicted_logistic_score, predicted_cls_binary = defaultdict(
+    predicted_boxes, predicted_cls_probs, predicted_covar_mats, predicted_inter_feat, predicted_logistic_score, predicted_projections = defaultdict(
         torch.Tensor), defaultdict(
         torch.Tensor), defaultdict(
             torch.Tensor), defaultdict(
@@ -97,8 +97,7 @@ def eval_predictions_preprocess(
                 ),
                 0
             )
-        # breakpoint()
-        # breakpoint()
+
         if 'logistic_score' in list(predicted_instance.keys()):
             predicted_logistic_score[predicted_instance['image_id']] = torch.cat(
                 (
@@ -108,11 +107,11 @@ def eval_predictions_preprocess(
                 0
             )
 
-        if 'binary_cls' in list(predicted_instance.keys()):
-            predicted_cls_binary[predicted_instance['image_id']] = torch.cat(
+        if 'projections' in list(predicted_instance.keys()):
+            predicted_projections[predicted_instance['image_id']] = torch.cat(
                 (
-                    predicted_cls_binary[predicted_instance['image_id']].to(device),
-                    torch.as_tensor(predicted_instance['binary_cls'], dtype=torch.float32).to(device).unsqueeze(0)
+                    predicted_projections[predicted_instance['image_id']].to(device),
+                    torch.as_tensor(predicted_instance['projections'], dtype=torch.float32).to(device).unsqueeze(0)
                 ),
                 0
             )
@@ -125,14 +124,14 @@ def eval_predictions_preprocess(
                      'predicted_cls_probs': predicted_cls_probs,
                      "predicted_inter_feat": predicted_inter_feat,
                      'predicted_covar_mats': predicted_covar_mats,
-                     'predicted_cls_binary': predicted_cls_binary})
+                     'predicted_projections': predicted_projections})
     else:
         return dict({'predicted_boxes': predicted_boxes,
                      'predicted_cls_probs': predicted_cls_probs,
                      'predicted_logistic_score': predicted_logistic_score,
                      "predicted_inter_feat": predicted_inter_feat,
                      'predicted_covar_mats': predicted_covar_mats,
-                     'predicted_cls_binary': predicted_cls_binary})
+                     'predicted_projections': predicted_projections})
 
 
 def eval_gt_preprocess(gt_instances):

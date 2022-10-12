@@ -207,7 +207,7 @@ def main(
         predicted_cov_mats = preprocessed_predicted_instances['predicted_covar_mats']
         predicted_cls_probs = preprocessed_predicted_instances['predicted_cls_probs']
         predicted_inter_feat = preprocessed_predicted_instances['predicted_inter_feat']
-        predicted_cls_binary = preprocessed_predicted_instances['predicted_cls_binary']
+        predicted_projections = preprocessed_predicted_instances['predicted_projections']
         # import ipdb; ipdb.set_trace()
         predicted_logistic_score = None
         if 'predicted_logistic_score' in list(preprocessed_predicted_instances.keys()):
@@ -225,9 +225,9 @@ def main(
         if predicted_logistic_score is not None:
             predicted_logistic_score = list(itertools.chain.from_iterable(
             [predicted_logistic_score[key] for key in predicted_logistic_score.keys()]))
-        if predicted_cls_binary is not None:
-            predicted_cls_binary = list(itertools.chain.from_iterable(
-            [predicted_cls_binary[key] for key in predicted_cls_binary.keys()]))
+        if predicted_projections is not None:
+            predicted_projections = list(itertools.chain.from_iterable(
+            [predicted_projections[key] for key in predicted_projections.keys()]))
 
         num_false_positives = len(predicted_boxes)
         assert num_false_positives == len(predicted_inter_feat)
@@ -266,56 +266,7 @@ def main(
             false_positives_cls_analysis = scoring_rules.softmax_compute_cls_scores(
                 false_positives_dict, valid_idxs)
 
-        ### for error analsysis.
-        # MAPPER = MAPPER_coco_open
-        #
-        #
-        # predicted_class_name = []
-        # for index in predicted_class_idx:
-        #     predicted_class_name.append(MAPPER[int(index.cpu().data.numpy())])
-        # labels, counts = np.unique(predicted_class_name, return_counts=True)
-        # ticks = range(len(MAPPER))
-        # plot_energy_dict = {}
-        # plot_number_dict = {}
-        # for key in list(MAPPER.values()):
-        #     plot_energy_dict[key] = 0
-        #     plot_number_dict[key] = 0
-        #
-        #
-        # # for number only.
-        # for index in range(len(labels)):
-        #     assert labels[index] in list(plot_number_dict.keys())
-        #     plot_number_dict[labels[index]] += counts[index]
-        #
-        #
-        # # for energy only.
-        # # breakpoint()
-        # for index in range(len(predicted_inter_feat)):
-        #     energy_score = 1 * torch.logsumexp(predicted_inter_feat[index] / 1, dim=0).cpu().data.numpy()
-        #     # breakpoint()
-        #     plot_energy_dict[MAPPER[int(predicted_class_idx[index].cpu().data.numpy())]] += energy_score
-        # for key in list(plot_energy_dict.keys()):
-        #     if plot_number_dict[key] != 0:
-        #         plot_energy_dict[key] /= plot_number_dict[key]
-        # ##
-        #
-        #
-        # plt.figure(figsize=(32, 9))
-        #
-        # # plt.bar(ticks, list(plot_number_dict.values()), align='center')
-        # # plt.xticks(ticks, list(plot_number_dict.keys()), fontsize=10, rotation=45)
-        #
-        # plt.bar(ticks, list(plot_energy_dict.values()), align='center')
-        # plt.xticks(ticks, list(plot_energy_dict.keys()), fontsize=10, rotation=45)
-        #
-        #
-        # # from collections import Counter
-        # # letter_counts = Counter(predicted_class_name)
-        # # plot_bar_from_counter(letter_counts)
-        # plt.savefig('coco_open_open_ood_error_analysis.jpg', dpi=250)
-        # import ipdb;
-        # ipdb.set_trace()
-        #######
+
 
         # Summarize and print all
         table = PrettyTable()
@@ -350,16 +301,11 @@ def main(
             inference_output_dir,
             'probabilistic_scoring_res_odd_{}.pkl'.format(min_allowed_score))
         false_positives_reg_analysis.update(false_positives_cls_analysis)
-        # breakpoint()
-        # features = []
-        # for feature in predicted_inter_feat:
-        #     features.append(np.asarray(feature.cpu().data.numpy())[-2:])
-        # features = np.asarray(features)
-        # predicted_inter_feat = torch.stack(predicted_inter_feat)[:,-1:]
+
         false_positives_reg_analysis.update({'inter_feat': predicted_inter_feat})
         false_positives_reg_analysis.update({'predicted_cls_id': predicted_class_idx})
         false_positives_reg_analysis.update({'logistic_score': predicted_logistic_score})
-        false_positives_reg_analysis.update({'binary_cls': predicted_cls_binary})
+        false_positives_reg_analysis.update({'projections': predicted_projections})
         with open(dictionary_file_name, "wb") as pickle_file:
             pickle.dump(false_positives_reg_analysis, pickle_file)
 

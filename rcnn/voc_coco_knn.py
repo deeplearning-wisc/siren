@@ -21,7 +21,8 @@ parser = argparse.ArgumentParser(description='Evaluates an OOD Detector',
 parser.add_argument('--energy', type=int, default=1, help='noise for Odin')
 parser.add_argument('--T', default=1., type=float, help='temperature: energy|Odin')
 parser.add_argument('--thres', default=0.5275, type=float)
-parser.add_argument('--name', default='vosV3CenterLoss', type=str)
+parser.add_argument('--length', default=64, type=int)
+parser.add_argument('--name', default='center64_0.1', type=str)
 parser.add_argument('--seed', default=0, type=int)
 parser.add_argument('--model', default='faster-rcnn', type=str)
 parser.add_argument('--use_es', default=0, type=int)
@@ -38,24 +39,24 @@ parser = argparse.ArgumentParser(description='Evaluates an OOD Detector',
 
 name = args.name
 if args.gpu == 0:
-    prefix = '/nobackup-slow/dataset/'
+    prefix = '/nobackup/dataset/'
 else:
     prefix = '/nobackup/'
 
-length = 64
+length = args.length
 
-id_train_data = pickle.load(open(prefix + 'my_xfdu/BDD-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/bdd_custom_train/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
-id_val_data = pickle.load(open(prefix + 'my_xfdu/BDD-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/bdd_custom_val/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
+id_train_data = pickle.load(open(prefix + 'my_xfdu/VOC-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/voc_custom_train/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
+id_val_data = pickle.load(open(prefix + 'my_xfdu/VOC-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/voc_custom_val/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
 # labels_val = id_val_data['predicted_cls_id']
 id_train_data = torch.stack(id_train_data['binary_cls']).cpu()
 id_val_data = torch.stack(id_val_data['binary_cls']).cpu()
 if args.open:
     ood_val_data = pickle.load(open(
-        prefix + 'my_xfdu/BDD-Detection/' + args.model + '/' + args.name + '/random_seed' + '_' + str(
+        prefix + 'my_xfdu/VOC-Detection/' + args.model + '/' + args.name + '/random_seed' + '_' + str(
             args.seed) + '/inference/openimages_ood_val/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_' + str(
             args.thres) + '.pkl', 'rb'))
 else:
-    ood_val_data = pickle.load(open(prefix + 'my_xfdu/BDD-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/coco_ood_val_bdd/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
+    ood_val_data = pickle.load(open(prefix + 'my_xfdu/VOC-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/coco_ood_val/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
 # labels_ood = ood_val_data['predicted_cls_id']
 ood_val_data = torch.stack(ood_val_data['binary_cls']).cpu()
 
@@ -70,16 +71,12 @@ if 1:
 
 
 import faiss
-
 res = faiss.StandardGpuResources()
-
 index = faiss.GpuIndexFlatL2(res, id_train_data.shape[1])
 
-# index = faiss.IndexFlatL2(id_train_data.shape[1])
+
 index.add(id_train_data)
 for K in [1, 5, 10 ,20, 50, 100, 200, 300, 400, 500]:
-# for K in [300, 500, 600, 700, 800, 900]:
-# for K in [10]:
     D, _ = index.search(all_data_in, K)
     scores_in = -D[:,-1]
     all_results = []
