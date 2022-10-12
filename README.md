@@ -92,3 +92,4 @@ Firstly, enter the deformable detr folder by running
 cd detr
 ```
 
+Before training, 1) modify the file address for saving the checkpoint by changing "EXP_DIR" in the shell files inside ./configs/; 2) modify the address for the training and ood dataset in the main.py file.

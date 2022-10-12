@@ -17,20 +17,6 @@ import torch.nn as nn
 import utils
 
 
-# __all__ = ['sample_vMF']
-
-
-# realmin = 1e-10
-#
-#
-# def norm(input, p=2, dim=0, eps=1e-12):
-#     return input.norm(p, dim, keepdim=True).clamp(min=eps).expand_as(input)
-#
-#
-# def mkdirs(path):
-#     if not os.path.exists(path):
-#         os.makedirs(path)
-
 
 class vMFLogPartition(torch.autograd.Function):
     '''
@@ -152,84 +138,3 @@ def sample_vMF(mu, kappa, num_samples):
     # breakpoint()
     return samples
 
-# def sample_vMF(mu, kappa, num_samples):
-#     """Generate num_samples N-dimensional samples from von Mises Fisher
-#     distribution around center mu \in R^N with concentration kappa.
-#     """
-#     dim = len(mu)
-#     result = np.zeros((num_samples, dim))
-#     for nn in range(num_samples):
-#         # sample offset from center (on sphere) with spread kappa
-#         w = _sample_weight(kappa, dim)
-#
-#         # sample a point v on the unit sphere that's orthogonal to mu
-#         v = _sample_orthonormal_to(mu)
-#
-#         # compute new point
-#         result[nn, :] = v * np.sqrt(1. - w**2) + w * mu
-#
-#     return result
-    # # a new version.
-    #
-    # d = len(mu)
-    # N = num_samples
-    # # Step-1: Sample uniform unit vectors in R^{d-1}
-    # v = torch.randn(N, d - 1).to(mu)
-    # v = v / norm(v, dim=1)
-    #
-    # # Step-2: Sample v0
-    # kmr = np.sqrt(4 * kappa.item() ** 2 + (d - 1) ** 2)
-    # bb = (kmr - 2 * kappa) / (d - 1)
-    # aa = (kmr + 2 * kappa + d - 1) / 4
-    # dd = (4 * aa * bb) / (1 + bb) - (d - 1) * np.log(d - 1)
-    # beta = torch.distributions.Beta(torch.tensor(0.5 * (d - 1)), torch.tensor(0.5 * (d - 1)))
-    # uniform = torch.distributions.Uniform(0.0, 1.0)
-    # v0 = torch.tensor([]).to(mu)
-    # while len(v0) < N:
-    #     eps = beta.sample([1, rsf * (N - len(v0))]).squeeze().to(mu)
-    #     uns = uniform.sample([1, rsf * (N - len(v0))]).squeeze().to(mu)
-    #     w0 = (1 - (1 + bb) * eps) / (1 - (1 - bb) * eps)
-    #     t0 = (2 * aa * bb) / (1 - (1 - bb) * eps)
-    #     det = (d - 1) * t0.log() - t0 + dd - uns.log()
-    #     v0 = torch.cat([v0, torch.tensor(w0[det >= 0]).to(mu)])
-    #     if len(v0) > N:
-    #         v0 = v0[:N]
-    #         break
-    # v0 = v0.reshape([N, 1])
-    #
-    # # Step-3: Form x = [v0; sqrt(1-v0^2)*v]
-    # samples = torch.cat([v0, (1 - v0 ** 2).sqrt() * v], 1)
-    #
-    # # Setup-4: Householder transformation
-    # e1mu = torch.zeros(d, 1).to(mu);
-    # e1mu[0, 0] = 1.0
-    # e1mu = e1mu - mu if len(mu.shape) == 2 else e1mu - mu.unsqueeze(1)
-    # e1mu = e1mu / utils.norm(e1mu, dim=0)
-    # samples = samples - 2 * (samples @ e1mu) @ e1mu.t()
-    #
-    # return samples
-
-
-# def _sample_weight(kappa, dim):
-#     """Rejection sampling scheme for sampling distance from center on
-#     surface of the sphere.
-#     """
-#     dim = dim - 1  # since S^{n-1}
-#     b = dim / (np.sqrt(4. * kappa**2 + dim**2) + 2 * kappa)
-#     x = (1. - b) / (1. + b)
-#     c = kappa * x + dim * np.log(1 - x**2)
-#
-#     while True:
-#         z = np.random.beta(dim / 2., dim / 2.)
-#         w = (1. - (1. + b) * z) / (1. - (1. - b) * z)
-#         u = np.random.uniform(low=0, high=1)
-#         if kappa * w + dim * np.log(1. - x * w) - c >= np.log(u):
-#             return w
-#
-#
-# def _sample_orthonormal_to(mu):
-#     """Sample point on sphere orthogonal to mu."""
-#     v = np.random.randn(mu.shape[0])
-#     proj_mu_v = mu * np.dot(mu, v) / np.linalg.norm(mu)
-#     orthto = v - proj_mu_v
-#     return orthto / np.linalg.norm(orthto)

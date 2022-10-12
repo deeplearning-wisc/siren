@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="3da6359d-859d-4bbe-a855-fc7c2a92bcfd" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_fine_tune_10pct_coco.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_fine_tune_10pct_pascal.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_fine_tune_1pct_coco.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_fine_tune_2pct_coco.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_fine_tune_5pct_coco.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_fine_tune_full_coco.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_fine_tune_full_pascal.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_top30_coco.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_top30_in.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_top30_in100.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_top30_in_detr.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/DETReg_top5_in100.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_dismax.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project64.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project64_seed44.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_detereg.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_weight_2.0.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_csi.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_godin.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_test.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_unknown_separate_weight_2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/bdd_new_unknown_separate_weight_2_test.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/bdd_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.1_t_0.1_vmf_start_0_reweighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.3_t_0.1_vmf_start_0_reweighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.3_t_0.1_vmf_start_0_reweighted_ol-relu.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_900.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_dim_128.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_dim_32.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_dim_64.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_dim_8.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_mc-relu.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_mc-select-2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_mc.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ml-relu-16-sample-from-1.1e4.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ml-relu-16-sample-from-2e4.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ml-relu-16.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ml-relu-16_select-10.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ml-relu-16_select-2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ml-relu-16_select-20.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ml-relu-8.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_no.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_no_center.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ol-relu-select-2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_ol-relu.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_reg_0.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_reg_0.7.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_reg_1.3.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_reg_1.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_select_2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_select_3.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_select_4.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.5_t_0.1_vmf_start_0_reweighted_select_5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.7_t_0.1_vmf_start_0_reweighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_0.7_t_0.1_vmf_start_0_reweighted_ol-relu.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.0_t_0.1_vmf_start_0_reweighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.0_t_0.1_vmf_start_0_reweighted_ol-relu.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.0_t_0.1_vmf_start_30.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0-reg-0.1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0-reg-0.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_add_sample.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_add_sample_more.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_add_sample_multi_layer_more.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_add_sample_test.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_focal_loss.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_imbalance.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_multi_layer-16.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_multi_layer-8.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_multi_layer-no-relu.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_multi_layer.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_reweighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_0_sigmoid.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_20.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_30_wei_0.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_start_40.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/cache/pascal_new_center_project_dim_16_weight_1.5_t_0.1_vmf_test.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_0.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_1.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_0.1_t_0.1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_0.1_t_0.1_learnable_kappa_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_0.5_t_0.1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_0.5_t_0.1_estimate_kappa.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_0.5_t_0.1_learnable_kappa.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_0.5_t_0.1_learnable_kappa_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.0_t_0.1_learnable_kappa_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.0_t_0.1_learnable_kappa_mlp_project_on_the_logits.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.0_t_1.0.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_add_prior.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_detereg.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_detereg_seed43.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_detereg_seed44.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_dim_128.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_dim_32.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_dim_64.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_dim_8.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_dismax.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_fix.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_fix_1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_fix_20.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_fix_40.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_fix_40_repeat.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_fix_5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_init_1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_init_20.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_init_40.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_init_5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_no_kappa.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_no_zp.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_normal.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_not_center_revise.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_on_the_logits.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_on_the_logits_5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_on_the_pen.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_on_the_pen_ours.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_seed1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_seed2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_special_lr.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_special_lr2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_learnable_kappa_mlp_project_special_lr5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_1.5_t_0.1_rewighted.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_2.0_t_0.1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_2.0_t_0.1_learnable_kappa_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_2.0_t_0.1_learnable_kappa_mlp_project_on_the_logits.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_16_weight_2.5_t_0.1_learnable_kappa_mlp_project.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_256.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_32.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_32_weight_1.5_t_0.1_learnable_kappa_mlp_project_add_prior.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_32_weight_1.5_t_0.1_learnable_kappa_mlp_project_on_the_logits.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_64.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_64_weight_1.5_t_0.1_learnable_kappa_mlp_project_add_prior.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_64_weight_1.5_t_0.1_learnable_kappa_mlp_project_on_the_logits.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_dim_8.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_temp_0.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_temp_1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_temp_2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_wei_0.8_dim_16_t_0.1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_weight_0.1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_weight_0.5.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_weight_0.8.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_project_weight_2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_center_scheme_v1.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_csi.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_detreg.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_godin.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_ow_detr.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_unknown.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_unknown_20_epoch.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_unknown_40_epoch.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_unknown_select_2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_unknown_separate.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_unknown_separate_weight_2.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/pascal_new_unknown_test.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/sup_fine_tune_full_pascal.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/changelog.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/figs/illustration.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/original.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/ow_detr.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_density_distribution.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_fig1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_initialization.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_initialization1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_loss.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_outliers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_project.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_umap_id_ood.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_umap_voc_penul.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_umap_voc_penul_all.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vMF.py" beforeDir="false" afterPath="$PROJECT_DIR$/vMF.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/voc_coco_vmf.py" beforeDir="false" afterPath="$PROJECT_DIR$/voc_coco_vmf.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/voc_coco_vmf_speckle.py" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2G1Fo89VQWqGlyN8cxMOiWn3bJQ" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "true",
+    "last_opened_file_path": "C:/Users/dxfsx/Desktop/github_repo/siren/detr",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3da6359d-859d-4bbe-a855-fc7c2a92bcfd" name="Changes" comment="" />
+      <created>1665548354498</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1665548354498</updated>
+      <workItem from="1665548355716" duration="2612000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

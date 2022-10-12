@@ -105,51 +105,26 @@ def main(args):
 
     for n, p in model_without_ddp.named_parameters():
         print(n)
-    if args.special_lr:
-        param_dicts = [
-            {
-                "params":
-                    [p for n, p in model_without_ddp.named_parameters()
-                     if not match_name_keywords(n, args.lr_backbone_names) and not match_name_keywords(n, args.lr_linear_proj_names) \
-                     and not match_name_keywords(n, ['learnable_kappa']) and p.requires_grad],
-                "lr": args.lr,
-            },
-            {
-                "params": [p for n, p in model_without_ddp.named_parameters() if match_name_keywords(n, args.lr_backbone_names) and p.requires_grad],
-                "lr": args.lr_backbone,
-            },
-            {
-                "params":
-                    [p for n, p in model_without_ddp.named_parameters()
-                     if match_name_keywords(n,  ['learnable_kappa']) and p.requires_grad],
-                "lr": args.lr * 2,
-            },
-            {
-                "params": [p for n, p in model_without_ddp.named_parameters() if match_name_keywords(n, args.lr_linear_proj_names) and p.requires_grad],
-                "lr": args.lr * args.lr_linear_proj_mult,
-            }
-        ]
-        # breakpoint()
-    else:
-        param_dicts = [
-            {
-                "params":
-                    [p for n, p in model_without_ddp.named_parameters()
-                     if not match_name_keywords(n, args.lr_backbone_names) and not match_name_keywords(n,
-                                                                                                       args.lr_linear_proj_names) and p.requires_grad],
-                "lr": args.lr,
-            },
-            {
-                "params": [p for n, p in model_without_ddp.named_parameters() if
-                           match_name_keywords(n, args.lr_backbone_names) and p.requires_grad],
-                "lr": args.lr_backbone,
-            },
-            {
-                "params": [p for n, p in model_without_ddp.named_parameters() if
-                           match_name_keywords(n, args.lr_linear_proj_names) and p.requires_grad],
-                "lr": args.lr * args.lr_linear_proj_mult,
-            }
-        ]
+
+    param_dicts = [
+        {
+            "params":
+                [p for n, p in model_without_ddp.named_parameters()
+                 if not match_name_keywords(n, args.lr_backbone_names) and not match_name_keywords(n,
+                                                                                                   args.lr_linear_proj_names) and p.requires_grad],
+            "lr": args.lr,
+        },
+        {
+            "params": [p for n, p in model_without_ddp.named_parameters() if
+                       match_name_keywords(n, args.lr_backbone_names) and p.requires_grad],
+            "lr": args.lr_backbone,
+        },
+        {
+            "params": [p for n, p in model_without_ddp.named_parameters() if
+                       match_name_keywords(n, args.lr_linear_proj_names) and p.requires_grad],
+            "lr": args.lr * args.lr_linear_proj_mult,
+        }
+    ]
     if args.sgd:
         optimizer = torch.optim.SGD(param_dicts, lr=args.lr, momentum=0.9,
                                     weight_decay=args.weight_decay)
@@ -366,27 +341,12 @@ def get_datasets(args):
 
 
 def set_dataset_path(args):
-    if args.gpu_option == 0:
-        args.data_root = '/nobackup-slow/dataset/my_xfdu/'
-        args.bdd_root = '/nobackup-slow/dataset/my_xfdu/bdd-100k/bdd100k/images/100k/'
-        args.bdd_ann_root_train = '/nobackup-slow/dataset/my_xfdu/bdd-100k/bdd100k/train_bdd_converted.json'
-        args.bdd_ann_root_test = '/nobackup-slow/dataset/my_xfdu/bdd-100k/bdd100k/val_bdd_converted.json'
-        args.open_root = '/nobackup-slow/dataset/my_xfdu/OpenImages/ood_classes_rm_overlap/images'
-        args.open_ann_root = '/nobackup-slow/dataset/my_xfdu/OpenImages/ood_classes_rm_overlap/COCO-Format/val_coco_format.json'
-    elif args.gpu_option == 1:
-        args.bdd_root = '/nobackup/dataset/my_xfdu/bdd-100k/bdd100k/images/100k/'
-        args.bdd_ann_root_train = '/nobackup/dataset/my_xfdu/bdd-100k/bdd100k/train_bdd_converted.json'
-        args.bdd_ann_root_test = '/nobackup/dataset/my_xfdu/bdd-100k/bdd100k/val_bdd_converted.json'
-        args.data_root = '/nobackup/dataset/my_xfdu/'
-        args.open_root = '/nobackup/dataset/my_xfdu/OpenImages/ood_classes_rm_overlap/images'
-        args.open_ann_root = '/nobackup/dataset/my_xfdu/OpenImages/ood_classes_rm_overlap/COCO-Format/val_coco_format.json'
-    else:
-        args.bdd_root = '/nobackup/my_xfdu/bdd-100k/bdd100k/images/100k/'
-        args.bdd_ann_root_train = '/nobackup/my_xfdu/bdd-100k/bdd100k/train_bdd_converted.json'
-        args.bdd_ann_root_test = '/nobackup/my_xfdu/bdd-100k/bdd100k/val_bdd_converted.json'
-        args.data_root = '/nobackup/my_xfdu/'
-        args.open_root = '/nobackup/my_xfdu/OpenImages/ood_classes_rm_overlap/images'
-        args.open_ann_root = '/nobackup/my_xfdu/OpenImages/ood_classes_rm_overlap/COCO-Format/val_coco_format.json'
+    args.data_root = '/nobackup-slow/dataset/my_xfdu/'
+    args.bdd_root = '/nobackup-slow/dataset/my_xfdu/bdd-100k/bdd100k/images/100k/'
+    args.bdd_ann_root_train = '/nobackup-slow/dataset/my_xfdu/bdd-100k/bdd100k/train_bdd_converted.json'
+    args.bdd_ann_root_test = '/nobackup-slow/dataset/my_xfdu/bdd-100k/bdd100k/val_bdd_converted.json'
+    args.open_root = '/nobackup-slow/dataset/my_xfdu/OpenImages/ood_classes_rm_overlap/images'
+    args.open_ann_root = '/nobackup-slow/dataset/my_xfdu/OpenImages/ood_classes_rm_overlap/COCO-Format/val_coco_format.json'
     args.coco_path = os.path.join(args.data_root, 'coco2017')
     args.airbus_path = os.path.join(args.data_root, 'airbus-ship-detection')
     args.imagenet_path = os.path.join(args.data_root, 'ilsvrc')
