@@ -87,3 +87,8 @@ The OpenImages dataset folder should have the following structure:
 
 ## Training
 
+Firstly, enter the deformable detr folder by running
+```
+cd detr
+```
+
