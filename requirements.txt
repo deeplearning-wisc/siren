@@ -1,0 +1,15 @@
+pycocotools
+tqdm
+cython
+scipy
+opencv-contrib-python==4.5.1.48
+pandas
+seaborn
+pyyaml==5.1
+wand
+scikit-image
+sklearn
+# Torch
+--find-links https://download.pytorch.org/whl/cu101/torch_stable.html
+torch==1.7.1
+torchvision==0.8.2
