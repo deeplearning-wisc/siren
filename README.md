@@ -150,6 +150,82 @@ The pretrained models for Pascal-VOC can be downloaded from [vanilla](https://dr
 The pretrained models for BDD-100k can be downloaded from [vanilla](https://drive.google.com/file/d/1O_EoEQMSNDMBrAVn0Opr56BY_lSS-1P-/view?usp=sharing) and [SIREN](https://drive.google.com/file/d/1QOEMAUj0E9KWNM9e-jmlNw2LjTQv2om8/view?usp=sharing).
 
 
-## VOS on Classification models
+## SIREN on Faster R-CNN models
+
+Following [VOS](https://github.com/deeplearning-wisc/vos) for intallation and preparation.
+
+**SIREN on VOC**
+```
+python train_net_gmm.py 
+--dataset-dir path/to/dataset/dir
+--num-gpus 8 
+--config-file VOC-Detection/faster-rcnn/center64_0.1.yaml
+--random-seed 0 
+--resume
+```
+
+## Evaluation
+
+**Evaluation with the in-distribution dataset to be VOC**
+
+Firstly run on the in-distribution dataset:
+```
+python apply_net.py 
+--dataset-dir path/to/dataset/dir
+--test-dataset voc_custom_val 
+--config-file VOC-Detection/faster-rcnn/center64_0.1.yaml 
+--inference-config Inference/standard_nms.yaml 
+--random-seed 0 
+--image-corruption-level 0 
+--visualize 0
+```
+Then run on the in-distribution training dataset (not required for vMF score):
+```
+python apply_net.py 
+--dataset-dir path/to/dataset/dir
+--test-dataset voc_custom_train 
+--config-file VOC-Detection/faster-rcnn/center64_0.1.yaml 
+--inference-config Inference/standard_nms.yaml 
+--random-seed 0 
+--image-corruption-level 0 
+--visualize 0
+```
+
+Finally run on the OOD dataset:
+
+```
+python apply_net.py
+--dataset-dir path/to/dataset/dir
+--test-dataset coco_ood_val 
+--config-file VOC-Detection/faster-rcnn/center64_0.1.yaml 
+--inference-config Inference/standard_nms.yaml 
+--random-seed 0 
+--image-corruption-level 0 
+--visualize 0
+```
+Obtain the metrics by both vMF and KNN score using:
+```
+python voc_coco_vmf.py 
+--name vos 
+--thres xxx 
+--energy 1 
+--seed 0
+```
+Here the threshold is determined according to [ProbDet](https://github.com/asharakeh/probdet). It will be displayed in the screen as you finish evaluating on the in-distribution dataset.
+
+**Pretrained models**
+
+The pretrained models for Pascal-VOC can be downloaded from [SIREN-ResNet](https://drive.google.com/file/d/1o5yhkgPUhmlp9Co1DCuh_li6kwATUoET/view?usp=sharing) with the projected dimension to be 64.
 
 
+## Citation ##
+If you found any part of this code is useful in your research, please consider citing our paper:
+
+```
+@inproceedings{du2022siren,
+  title={SIREN: Shaping Representations for Detecting Out-of-distribution Objects},
+  author={Du, Xuefeng and Gozum, Gabriel and Ming, Yifei and Li, Yixuan},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2022}
+}
+```
