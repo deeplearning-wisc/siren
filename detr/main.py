@@ -207,11 +207,6 @@ def main(args):
             test_stats, coco_evaluator = evaluate_ood_ood(model, criterion, postprocessors,
                                                   data_loader_val, base_ds, device, args.output_dir, args.resume.split('checkpoint.pth')[0],
                                                           args.dataset,args.viz_prediction_results)
-        elif args.eval_speckle:
-            test_stats, coco_evaluator = evaluate_ood_id_speckle(args, model, criterion, postprocessors,
-                                                         data_loader_val, base_ds, device, args.output_dir,
-                                                         args.resume.split('checkpoint.pth')[0], args.dataset,
-                                                         args.viz_prediction_results)
         else:
             test_stats, coco_evaluator = evaluate_ood_id(args, model, criterion, postprocessors,
                                                   data_loader_val, base_ds, device, args.output_dir,

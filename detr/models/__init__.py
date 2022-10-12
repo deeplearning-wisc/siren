@@ -16,15 +16,16 @@ from .detr_matcher import build_matcher as build_detr_matcher
 from .segmentation import (DETRsegm, PostProcessPanoptic, PostProcessSegm,
                            dice_loss, sigmoid_focal_loss)
 from .deformable_transformer import build_deforamble_transformer
-
-from .ow_detr import DefSetCriterion_owdetr
 from .transformer import build_transformer
 
 
 def build_model(args):
     if args.dataset_file == 'coco':
         if args.dataset == 'coco_ood_val' or args.dataset == 'openimages_ood_val':
-            num_classes = 10
+            if arg.eval_bdd:
+                num_classes = 10
+            else:
+                num_classes = 20
         elif args.dataset == 'coco_ood_val_bdd':
             num_classes = 10
         else:
@@ -37,8 +38,6 @@ def build_model(args):
         num_classes = 10
     else:
         num_classes = 20
-    if args.objectness:
-        num_classes += 1
     # num_classes += 1
     device = torch.device(args.device)
 
@@ -47,17 +46,11 @@ def build_model(args):
     if args.masks:
         weight_dict["loss_mask"] = args.mask_loss_coef
         weight_dict["loss_dice"] = args.dice_loss_coef
-    if args.objectness:
-        weight_dict['loss_NC'] = 0.1
-    if args.csi:
-        weight_dict['loss_csi'] = 1
-    if args.center_loss:
-        weight_dict['loss_center'] = 1
-    if args.separate:
-        weight_dict['loss_separate'] = 1
-    if args.vmf:
-        weight_dict['loss_vmf'] = 1
-        # TODO this is a hack
+
+
+
+    weight_dict['loss_vmf'] = 1
+    # TODO this is a hack
     if args.aux_loss:
         aux_weight_dict = {}
         for i in range(args.dec_layers - 1):
@@ -74,10 +67,6 @@ def build_model(args):
     if args.object_embedding_loss:
         losses.append('object_embedding')
         weight_dict['loss_object_embedding'] = args.object_embedding_coef
-    if args.objectness:
-        losses = ['labels', 'NC_labels', 'boxes', 'cardinality']
-    if args.godin:
-        weight_dict['loss_godin'] = 0.1
     if args.masks:
         losses += ["masks"]
 
@@ -96,15 +85,12 @@ def build_model(args):
             two_stage=args.two_stage,
             object_embedding_loss=args.object_embedding_loss,
             obj_embedding_head=args.obj_embedding_head,
-            objectness = args.objectness,
+            # objectness = args.objectness,
             args=args
         )
         matcher = build_def_matcher(args)
-        if args.objectness:
-            criterion = DefSetCriterion_owdetr(args, num_classes, matcher, weight_dict, losses,
-                                        focal_alpha=args.focal_alpha)
-        else:
-            criterion = DefSetCriterion(num_classes, matcher, weight_dict, losses, args.objectness, focal_alpha=args.focal_alpha, args = args)
+
+        criterion = DefSetCriterion(num_classes, matcher, weight_dict, losses, focal_alpha=args.focal_alpha, args = args)
         postprocessors = {'bbox': DefPostProcess()}
 
     elif args.model == 'detr':

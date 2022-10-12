@@ -92,4 +92,64 @@ Firstly, enter the deformable detr folder by running
 cd detr
 ```
 
+### address change
 Before training, 1) modify the file address for saving the checkpoint by changing "EXP_DIR" in the shell files inside ./configs/; 2) modify the address for the training and ood dataset in the main.py file.
+
+### compile cuda functions
+
+```
+cd models/ops & python setup.py build install & cd ../../
+```
+
+**Vanilla Faster-RCNN with VOC as the in-distribution dataset**
+```
+GPUS_PER_NODE=8 ./tools/run_dist_launch.sh 8 ./configs/voc/vanilla.sh voc_id
+```
+**Vanilla Faster-RCNN with BDD as the in-distribution dataset**
+```
+GPUS_PER_NODE=8 ./tools/run_dist_launch.sh 8 ./configs/bdd/vanilla.sh voc_id
+```
+**SIREN on VOC**
+```
+GPUS_PER_NODE=8 ./tools/run_dist_launch.sh 8 ./configs/voc/siren.sh voc_id
+```
+
+## Evaluation
+
+**Evaluation with the in-distribution dataset to be VOC**
+
+Firstly run on the in-distribution dataset:
+```
+./configs/voc/<config file>.sh voc_id --resume snapshots/voc/<config file>/checkpoint.pth --eval
+```
+Then run on the in-distribution training dataset (not required for vMF score):
+```
+./configs/voc/<config file>.sh voc_id --resume snapshots/voc/<config file>/checkpoint.pth --eval --maha_train
+```
+
+Finally run on the OOD dataset of COCO:
+```
+./configs/voc/<config file>.sh coco_ood --resume snapshots/voc/<config file>/checkpoint.pth --eval
+```
+Obtain the metrics by vMF and KNN score using:
+```
+python voc_coco_vmf.py --name xxx --pro_length xx --use_trained_params 1
+```
+"name" means the vanilla or siren
+
+"pro_length" means the dimension of projected space. We use 16 for VOC and 64 for BDD.
+
+"use_trained_params" denotes whether we use the learned vMF distributions for OOD detection.
+
+
+
+**Pretrained models**
+
+The pretrained models for Pascal-VOC can be downloaded from [vanilla](https://drive.google.com/file/d/1-9ssnAL4UPv4sOpm8-jfrqgPMIbZ82NV/view?usp=sharing) and [SIREN](https://drive.google.com/file/d/1ZUr-ytjtDOYHfeM1geE_MI5B0rY0aisa/view?usp=sharing).
+
+The pretrained models for BDD-100k can be downloaded from [vanilla](https://drive.google.com/file/d/1O_EoEQMSNDMBrAVn0Opr56BY_lSS-1P-/view?usp=sharing) and [SIREN](https://drive.google.com/file/d/1QOEMAUj0E9KWNM9e-jmlNw2LjTQv2om8/view?usp=sharing).
+
+
+## VOS on Classification models
+
+

@@ -50,71 +50,25 @@ class DeformableDETR(nn.Module):
         self.transformer = transformer
         self.args = args
         hidden_dim = transformer.d_model
-        if self.args.on_the_pen or self.args.on_the_pen_ours:
-            self.onthepen_proj = nn.Linear(hidden_dim, 80)
-        self.object_embedding_loss = object_embedding_loss
-        if self.args.csi:
-            self.csi_cls = nn.Linear(hidden_dim, 4)
-        if self.args.on_the_pen or self.args.on_the_pen_ours:
-            self.class_embed = nn.Linear(80, num_classes)
-        else:
-            self.class_embed = nn.Linear(hidden_dim, num_classes)
-        if self.args.godin:
-            self.godin_h = nn.Linear(hidden_dim, num_classes, bias=False)
-            nn.init.kaiming_normal_(self.godin_h.weight.data, nonlinearity="relu")
-            self.godin_g = nn.Sequential(
-                nn.Linear(hidden_dim, 1),
-                nn.BatchNorm1d(1),
-                nn.Sigmoid()
-            )
 
-        if objectness:
-            self.featdim = 1024
-            self.unmatched_boxes = True
-            self.objectness_layers = nn.Linear(hidden_dim, 1)
+        self.object_embedding_loss = object_embedding_loss
+
+        self.class_embed = nn.Linear(hidden_dim, num_classes)
+
         if self.object_embedding_loss:
             if obj_embedding_head == 'intermediate':
                 last_channel_size = 2*hidden_dim
             elif obj_embedding_head == 'head':
                 last_channel_size = hidden_dim//2
             self.feature_embed = MLP(hidden_dim, hidden_dim, last_channel_size, 2)
-        if self.args.on_the_pen or self.args.on_the_pen_ours:
-            self.bbox_embed = MLP(80, 80, 4, 3)
-        else:
-            self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
 
-        if self.args.add_class_prior:
-            self.class_weight = nn.Linear(num_classes, 1, bias=False).cuda()
-            torch.nn.init.constant_(self.class_weight.weight, 1.0)
-            print(self.class_weight.weight)
-        if self.args.dismax:
-            self.dismax_prototypes = nn.Parameter(torch.Tensor(num_classes, hidden_dim)).cuda()
-            nn.init.normal_(self.dismax_prototypes, mean=0.0, std=1.0)
-            self.dismax_distance_scale = nn.Parameter(torch.Tensor(1)).cuda()
-            nn.init.constant_(self.dismax_distance_scale, 1.0)
-        if self.args.center_loss_scheme_project:
-            if not self.args.mlp_project:
-                self.center_project = nn.Linear(hidden_dim, self.args.project_dim)
-            else:
-                if not self.args.on_the_pen_ours:
-                    if self.args.siren_on_the_logits:
-                        self.center_project = nn.Sequential(
-                            nn.Linear(num_classes, self.args.project_dim),
-                            nn.ReLU(),
-                            nn.Linear(self.args.project_dim, self.args.project_dim)
-                        )
-                    else:
-                        self.center_project = nn.Sequential(
-                                                              nn.Linear(hidden_dim, self.args.project_dim),
-                                                              nn.ReLU(),
-                                                              nn.Linear(self.args.project_dim, self.args.project_dim)
-                                                              )
-                else:
-                    self.center_project = nn.Sequential(
-                        nn.Linear(80, self.args.project_dim),
-                        nn.ReLU(),
-                        nn.Linear(self.args.project_dim, self.args.project_dim)
-                    )
+        self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        if self.args.siren:
+            self.center_project = nn.Sequential(nn.Linear(hidden_dim, self.args.project_dim),
+                                                nn.ReLU(),
+                                                nn.Linear(self.args.project_dim, self.args.project_dim)
+                                                  )
+
 
 
         self.num_feature_levels = num_feature_levels
@@ -156,44 +110,9 @@ class DeformableDETR(nn.Module):
             nn.init.xavier_uniform_(proj[0].weight, gain=1)
             nn.init.constant_(proj[0].bias, 0)
 
-        # the below if condition means we sample virtual outliers using the vmf distribution.
-        if self.args.vmf:
-            if self.args.vmf_multi_layer:
-                self.sampling_cls_layer = nn.Sequential(
-                                                      nn.Linear(self.args.project_dim, 16),
-                                                      nn.ReLU(),
-                                                      nn.Linear(16, 2)
-                                                      )
-            elif self.args.vmf_multi_classifer:
-                if not self.args.vmf_multi_classifer_ml:
-                    self.sampling_cls_layer = nn.ModuleList([nn.Linear(self.args.project_dim, 1) for _ in range(num_classes)])
-                else:
-                    self.sampling_cls_layer = nn.ModuleList(
-                        [nn.Sequential(
-                            nn.ReLU(),
-                                        nn.Linear(self.args.project_dim, 16),
-                                      nn.ReLU(),
-                                      nn.Linear(16, 1)
-                                                      ) for _ in range(num_classes)])
-            else:
-                if self.args.vmf_loss_single_bit:
-                    self.sampling_cls_layer = nn.Linear(self.args.project_dim, 1)
-                else:
-                    self.sampling_cls_layer = nn.Linear(self.args.project_dim, 2)
-        if self.args.center_adaptive:
-            self.center_adpative_weight = nn.Linear(num_classes,1, bias=False).cuda()
-            torch.nn.init.uniform_(self.center_adpative_weight.weight)
-        if self.args.center_vmf_learnable_kappa or self.args.center_vmf_no_zp or self.args.center_vmf_no_kappa:
+        if self.args.siren:
             self.learnable_kappa = nn.Linear(num_classes,1, bias=False).cuda()
-            if self.args.center_vmf_no_kappa:
-                torch.nn.init.constant_(self.learnable_kappa.weight, 1.0)
-            else:
-                if self.args.learnable_kappa_init_normal:
-                    torch.nn.init.normal_(self.learnable_kappa.weight, 10, 3)
-                elif self.args.learnable_kappa_init_uniform:
-                    torch.nn.init.uniform_(self.learnable_kappa.weight, 5, 15)
-                else:
-                    torch.nn.init.constant_(self.learnable_kappa.weight, self.args.learnable_kappa_init)
+            torch.nn.init.constant_(self.learnable_kappa.weight, self.args.learnable_kappa_init)
         # if two-stage, the last class_embed and bbox_embed is for region proposal generation
         num_pred = (transformer.decoder.num_layers + 1) if two_stage else transformer.decoder.num_layers
         if with_box_refine:
@@ -239,119 +158,7 @@ class DeformableDETR(nn.Module):
             samples = nested_tensor_from_tensor_list(samples)
         return self.forward_samples(samples, targets)
 
-    def forward_samples_aug(self, samples):
-        features, pos = self.backbone(samples)
-        srcs = []
-        masks = []
-        for l, feat in enumerate(features):
-            src, mask = feat.decompose()
-            srcs.append(self.input_proj[l](src))
-            masks.append(mask)
-            assert mask is not None
-        if self.num_feature_levels > len(srcs):
-            _len_srcs = len(srcs)
-            for l in range(_len_srcs, self.num_feature_levels):
-                if l == _len_srcs:
-                    src = self.input_proj[l](features[-1].tensors)
-                else:
-                    src = self.input_proj[l](srcs[-1])
-                m = samples.mask
-                mask = F.interpolate(m[None].float(), size=src.shape[-2:]).to(torch.bool)[0]
-                pos_l = self.backbone[1](NestedTensor(src, mask)).to(src.dtype)
-                srcs.append(src)
-                masks.append(mask)
-                pos.append(pos_l)
-        query_embeds = None
-        if not self.two_stage:
-            query_embeds = self.query_embed.weight
-        hs, init_reference, inter_references, enc_outputs_class, enc_outputs_coord_unact = self.transformer(srcs, masks,
-                                                                                                            pos,
-                                                                                                            query_embeds)
-        outputs_classes = []
-        outputs_coords = []
-        pen_features = []
-        outputs_features = []
-        for lvl in range(hs.shape[0]):
-            if lvl == 0:
-                reference = init_reference
-            else:
-                reference = inter_references[lvl - 1]
-            reference = inverse_sigmoid(reference)
-            outputs_class = self.class_embed[lvl](hs[lvl])
-            tmp = self.bbox_embed[lvl](hs[lvl])
-            if reference.shape[-1] == 4:
-                tmp += reference
-            else:
-                assert reference.shape[-1] == 2
-                tmp[..., :2] += reference
-            outputs_coord = tmp.sigmoid()
-            outputs_classes.append(outputs_class)
-            pen_features.append(hs[lvl])
-            outputs_coords.append(outputs_coord)
-            # if self.object_embedding_loss:
-            #     outputs_features.append(outputs_feat)
-        outputs_class = torch.stack(outputs_classes)
-        outputs_coord = torch.stack(outputs_coords)
-        # if self.object_embedding_loss:
-        #     outputs_features = torch.stack(outputs_features)
-
-        out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
-        out['pen_features'] = pen_features[-1]
-        out['csi_cls'] = self.csi_cls
-        if self.object_embedding_loss:
-            out['pred_features'] = self.feature_embed(hs[-1])
-
-        if self.aux_loss:
-            out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord) #, outputs_features)
-        if self.two_stage:
-            enc_outputs_coord = enc_outputs_coord_unact.sigmoid()
-            out['enc_outputs'] = {'pred_logits': enc_outputs_class, 'pred_boxes': enc_outputs_coord}
-            if self.object_embedding_loss:
-                out['pred_features'] = outputs_features
-        return out
-
     def forward_samples(self, samples, targets=None):
-        if self.args.csi:
-            rotate_degree = np.random.randint(4, size=len(samples.tensors))
-            import copy
-            targets_aug = copy.deepcopy(targets)
-            for index in range(len(samples.tensors)):
-                assert index == 0
-                augmented_samples = torch.rot90(samples.tensors, rotate_degree[index], [2, 3])
-                if rotate_degree[index] == 1:
-                    for index1 in range(len(targets_aug[index]['boxes'])):
-                        tensor = box_ops.box_cxcywh_to_xyxy(targets_aug[index]['boxes'][index1])
-                        new_tensor = copy.deepcopy(tensor)
-                        new_tensor[0] = 1 - tensor[3]
-                        new_tensor[1] = tensor[0]
-                        new_tensor[2] = 1 - tensor[1]
-                        new_tensor[3] = tensor[2]
-                        targets_aug[index]['boxes'][index1] = box_ops.box_xyxy_to_cxcywh(new_tensor)
-                elif rotate_degree[index] == 2:
-                    for index1 in range(len(targets_aug[index]['boxes'])):
-                        tensor = box_ops.box_cxcywh_to_xyxy(targets_aug[index]['boxes'][index1])
-                        new_tensor = copy.deepcopy(tensor)
-                        new_tensor[0] = 1 - tensor[2]
-                        new_tensor[1] = 1 - tensor[3]
-                        new_tensor[2] = 1 - tensor[0]
-                        new_tensor[3] = 1 - tensor[1]
-                        targets_aug[index]['boxes'][index1] = box_ops.box_xyxy_to_cxcywh(new_tensor)
-                elif rotate_degree[index] == 3:
-                    for index1 in range(len(targets_aug[index]['boxes'])):
-                        tensor = box_ops.box_cxcywh_to_xyxy(targets_aug[index]['boxes'][index1])
-                        new_tensor = copy.deepcopy(tensor)
-                        new_tensor[0] = tensor[1]
-                        new_tensor[1] = 1 - tensor[2]
-                        new_tensor[2] = tensor[3]
-                        new_tensor[3] = 1 - tensor[0]
-                        targets_aug[index]['boxes'][index1] = box_ops.box_xyxy_to_cxcywh(new_tensor)
-            # breakpoint()
-            rotate_degree = torch.from_numpy(rotate_degree).cuda()
-            augmented_samples = nested_tensor_from_tensor_list(augmented_samples)
-            out_csi = self.forward_samples_aug(augmented_samples)
-            out_csi['new_targets'] = targets_aug
-            out_csi['rotate_degree'] = rotate_degree
-            # breakpoint()
         features, pos = self.backbone(samples)
         srcs = []
         masks = []
@@ -359,12 +166,7 @@ class DeformableDETR(nn.Module):
             dim_index = 1
         for l, feat in enumerate(features):
             src, mask = feat.decompose()
-            if self.objectness:
-                if self.unmatched_boxes:
-                    if l == dim_index:
-                        resnet_1024_feature = src.clone()  # 2X1024X61X67
-                else:
-                    resnet_1024_feature = None
+
             srcs.append(self.input_proj[l](src))
             masks.append(mask)
             assert mask is not None
@@ -389,11 +191,6 @@ class DeformableDETR(nn.Module):
                                                                                                             pos,query_embeds)
         # hs : 6,1,300,256
         outputs_classes = []
-        if self.objectness:
-            outputs_classes_nc = []
-        if self.args.godin:
-            outputs_godin = []
-            outputs_godin_h = []
         output_project_features = []
         pen_features = []
         outputs_coords = []
@@ -404,33 +201,12 @@ class DeformableDETR(nn.Module):
             else:
                 reference = inter_references[lvl - 1]
             reference = inverse_sigmoid(reference)
-            if self.args.on_the_pen or self.args.on_the_pen_ours:
-                outputs_class = self.class_embed[lvl](self.onthepen_proj(hs[lvl]))
-            else:
-                outputs_class = self.class_embed[lvl](hs[lvl])
-            if self.args.godin:
-                in_feat = F.normalize(hs[lvl],p=2,dim=-1)
-                godin_w = F.normalize(self.godin_h.weight,p=2,dim=-1)
-                # breakpoint()
-                ret1 = (torch.matmul(in_feat, godin_w.T.unsqueeze(0)))
-                ret = ret1 / self.godin_g(hs[lvl].squeeze()).unsqueeze(0)
-                outputs_godin.append(ret)
-                outputs_godin_h.append(ret1)
-            if self.objectness:
-                outputs_class_nc = self.objectness_branch[lvl](hs[lvl])
-                outputs_classes_nc.append(outputs_class_nc)
-            if self.args.center_loss_scheme_project and lvl == hs.shape[0] - 1:
-                if self.args.on_the_pen_ours:
-                    output_project_features.append(self.center_project(self.onthepen_proj(hs[lvl])))
-                else:
-                    if self.args.siren_on_the_logits:
-                        output_project_features.append(self.center_project(outputs_class))
-                    else:
-                        output_project_features.append(self.center_project(hs[lvl]))
-            if self.args.on_the_pen or self.args.on_the_pen_ours:
-                tmp = self.bbox_embed[lvl](self.onthepen_proj(hs[lvl]))
-            else:
-                tmp = self.bbox_embed[lvl](hs[lvl])
+            outputs_class = self.class_embed[lvl](hs[lvl])
+            if self.args.siren:
+                if lvl == hs.shape[0] - 1:
+                    output_project_features.append(self.center_project(hs[lvl]))
+
+            tmp = self.bbox_embed[lvl](hs[lvl])
             if reference.shape[-1] == 4:
                 tmp += reference
             else:
@@ -438,62 +214,31 @@ class DeformableDETR(nn.Module):
                 tmp[..., :2] += reference
             outputs_coord = tmp.sigmoid()#8,300,4
             outputs_classes.append(outputs_class)
-            if self.args.on_the_pen or self.args.on_the_pen_ours:
-                pen_features.append(self.onthepen_proj(hs[lvl]))
-            else:
-                pen_features.append(hs[lvl])
+
+            pen_features.append(hs[lvl])
             outputs_coords.append(outputs_coord)
-            # if self.object_embedding_loss:
-            #     outputs_features.append(outputs_feat)
         outputs_class = torch.stack(outputs_classes)
         outputs_coord = torch.stack(outputs_coords)
-        # if self.object_embedding_loss:
-        #     outputs_features = torch.stack(outputs_features)
-        # breakpoint()
 
 
-        if self.objectness:
-            output_class_nc = torch.stack(outputs_classes_nc)
 
-        if not self.objectness:
-            out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
-        else:
-            out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1], 'pred_nc_logits': outputs_classes_nc[-1]}
-        if self.objectness:
-            out['resnet_1024_feat'] = resnet_1024_feature
+        out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
         out['pen_features'] = pen_features[-1]
         out['epoch'] = self.epoch
-        if self.args.add_class_prior:
-            out['class_prior'] = self.class_weight
-        if self.args.csi:
-            out['out_csi'] = out_csi
-        if self.args.dismax:
-            out['dismax_prototypes'] = self.dismax_prototypes
-            out['dismax_distance_scale'] = self.dismax_distance_scale
-        if self.args.godin:
-            out['godin'] = outputs_godin[-1]
-            out['godin_h'] = outputs_godin_h[-1]
-        if self.args.center_adaptive:
-            out['center_adaptive'] = self.center_adpative_weight
         out['cls_head'] = self.class_embed[-1]
-        if self.args.vmf:
-            out['sampling_cls_layer'] = self.sampling_cls_layer
-        if self.args.center_loss_scheme_project:
+        if self.args.siren:
             assert len(output_project_features) == 1
+        if self.args.siren:
             out['project_features'] = output_project_features[-1]
             out['project_head'] = self.center_project
-        # breakpoint()
-        if self.args.center_vmf_learnable_kappa or self.args.center_vmf_no_kappa or self.args.center_vmf_no_zp:
             out['learnable_kappa'] = self.learnable_kappa
+
         ##end##
         if self.object_embedding_loss:
             out['pred_features'] = self.feature_embed(hs[-1])
 
         if self.aux_loss:
-            if self.objectness:
-                out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord, outputs_classes_nc) #, outputs_features)
-            else:
-                out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord)
+            out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord)
         if self.two_stage:
             enc_outputs_coord = enc_outputs_coord_unact.sigmoid()
             out['enc_outputs'] = {'pred_logits': enc_outputs_class, 'pred_boxes': enc_outputs_coord}
@@ -520,7 +265,7 @@ class SetCriterion(nn.Module):
         1) we compute hungarian assignment between ground truth boxes and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
-    def __init__(self, num_classes, matcher, weight_dict, losses, objectness, focal_alpha=0.25, args=None):
+    def __init__(self, num_classes, matcher, weight_dict, losses, focal_alpha=0.25, args=None):
         """ Create the criterion.
         Parameters:
             num_classes: number of object categories, omitting the special no-object category
@@ -533,68 +278,22 @@ class SetCriterion(nn.Module):
         self.num_classes = num_classes
         self.empty_weight = torch.ones(self.num_classes).cuda()
         self.empty_weight[-1] = 0.1
-        self.objectness = objectness
-
-
-
-
         self.matcher = matcher
         self.weight_dict = weight_dict
         self.losses = losses
         self.focal_alpha = focal_alpha
         self.ce = torch.nn.CrossEntropyLoss()
         self.args = args
-        # unknown
-        if self.args.unknown or self.args.center_loss:
-        # if self.args.unknown:
-            self.start_epoch = self.args.unknown_start_epoch
-            self.data_dict = torch.zeros(num_classes, self.args.sample_number, 256).cuda()
-            self.number_dict = {}
-            self.eye_matrix = torch.eye(256, device='cuda')
-            for i in range(num_classes):
-                self.number_dict[i] = 0
-        if self.args.center_loss:
-            self.criterion = torch.nn.CrossEntropyLoss().cuda()
-
-            if not self.args.center_loss_scheme_v1:
-                if self.args.center_loss_scheme_project:
-                    self.prototypes = torch.zeros(self.num_classes,
+        self.criterion = torch.nn.CrossEntropyLoss().cuda()
+        self.prototypes = torch.zeros(self.num_classes,
                                                   self.args.project_dim).cuda()
-                    self.data_dict = torch.zeros(num_classes,
-                                                 self.args.sample_number,
-                                                 self.args.project_dim).cuda()
-                    if self.args.vmf:
-                        self.start_epoch = self.args.unknown_start_epoch
-                        self.data_dict = torch.zeros(num_classes,
-                                                     self.args.sample_number,
-                                                     self.args.project_dim).cuda()
-                        self.number_dict = {}
-                        for i in range(num_classes):
-                            self.number_dict[i] = 0
-                else:
-                    self.prototypes = torch.zeros(self.num_classes, 256).cuda()#torch.nn.Linear(256, self.num_classes).cuda()
-            # self.register_buffer("prototypes", torch.zeros(self.num_classes, 256))
 
-    def weighted_softmax_loss(self, pred, target, center_adaptive):
-        center_adpative_weight = center_adaptive.weight.view(1,-1)
-        pred = F.relu(center_adpative_weight) * pred.exp() / (
-            (F.relu(center_adpative_weight) * pred.exp()).sum(-1)).unsqueeze(-1)
-        loss  = -(pred[range(target.shape[0]), target] + 1e-6).log().mean()
-
-        return loss
-
-    def weighted_vmf_loss(self, pred, weight_before_exp, target, class_weight=None):
+    def weighted_vmf_loss(self, pred, weight_before_exp, target):
         center_adpative_weight = weight_before_exp.view(1,-1)
-        if self.args.add_class_prior:
-            # print((class_weight.view(1,-1) * center_adpative_weight * pred.exp()).sum(-1))
-            pred =  center_adpative_weight  * F.relu(class_weight).view(1,-1) * pred.exp() / (
-                (center_adpative_weight  * F.relu(class_weight).view(1,-1) * pred.exp()).sum(-1)).unsqueeze(-1)
-        else:
-            pred = center_adpative_weight * pred.exp() / (
+        pred = center_adpative_weight * pred.exp() / (
                 (center_adpative_weight * pred.exp()).sum(-1)).unsqueeze(-1)
         loss  = -(pred[range(target.shape[0]), target] + 1e-6).log().mean()
-        # print(class_weight)
-        # print(pred.exp().dtype)
+
         return loss
 
 
@@ -603,849 +302,100 @@ class SetCriterion(nn.Module):
         targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
         """
         epoch = outputs['epoch']
-        if not self.objectness:
-            assert 'pred_logits' in outputs
-            src_logits = outputs['pred_logits']
 
-            idx = self._get_src_permutation_idx(indices)
-            # breakpoint()
-            target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
-            # print(target_classes_o)
-            # print((target_classes_o == 0).sum())
+        assert 'pred_logits' in outputs
+        src_logits = outputs['pred_logits']
 
-            target_classes = torch.full(src_logits.shape[:2], self.num_classes,
-                                        dtype=torch.int64, device=src_logits.device)
-            target_classes[idx] = target_classes_o
-
-            target_classes_onehot = torch.zeros(
-                [src_logits.shape[0],
-                 src_logits.shape[1],
-                 src_logits.shape[2] + 1],
-                dtype=src_logits.dtype,
-                layout=src_logits.layout,
-                device=src_logits.device)
-            target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
-
-            target_classes_onehot = target_classes_onehot[:,:,:-1]
-
-            # code for unknown-awareness
-            if self.args.unknown:
-                sum_temp = 0
-                for index in range(self.num_classes):
-                    sum_temp += self.number_dict[index]
-                # breakpoint()
-                if sum_temp == self.num_classes * self.args.sample_number and epoch < self.start_epoch:
-                    gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                    id_samples = outputs['pen_features'][idx]
-                    # maintaining an ID data queue for each class.
-                    for index in range(len(gt_classes_numpy)):
-                        dict_key = gt_classes_numpy[index]
-                        self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                              id_samples[index].detach().view(1, -1)), 0)
-
-                    # focal loss.
-                    loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha,
-                                                 gamma=2) * src_logits.shape[1]
-                    losses = {'loss_ce': loss_ce}
-
-                elif sum_temp == self.num_classes * self.args.sample_number and epoch >= self.start_epoch:
-                    gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                    id_samples = outputs['pen_features'][idx]
-                    # maintaining an ID data queue for each class.
-                    for index in range(len(gt_classes_numpy)):
-                        dict_key = gt_classes_numpy[index]
-                        self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                              id_samples[index].detach().view(1, -1)), 0)
-                    # the covariance finder needs the data to be centered.
-                    for index in range(self.num_classes):
-                        if index == 0:
-                            temp = self.data_dict[index].mean(0)
-                            mean_embed_id = temp.view(1, -1)
-                            X = self.data_dict[index] - temp
-                        else:
-                            temp = self.data_dict[index].mean(0)
-                            X = torch.cat((X, self.data_dict[index] - temp), 0)
-                            mean_embed_id = torch.cat((mean_embed_id,
-                                                       temp.view(1, -1)), 0)
-
-                    # add the variance.
-                    temp_precision = torch.mm(X.t(), X) / len(X)
-                    # for stable training.
-                    temp_precision += 0.0001 * self.eye_matrix
-
-                    for index in range(self.num_classes):
-                        new_dis = torch.distributions.multivariate_normal.MultivariateNormal(
-                            mean_embed_id[index], covariance_matrix=temp_precision)
-                        negative_samples = new_dis.rsample((self.args.sample_from,))
-                        prob_density = new_dis.log_prob(negative_samples)
-                        # breakpoint()
-                        # index_prob = (prob_density < - self.threshold).nonzero().view(-1)
-                        # keep the data in the low density area.
-                        cur_samples, index_prob = torch.topk(- prob_density, self.args.select)
-                        if index == 0:
-                            ood_samples = negative_samples[index_prob]
-                        else:
-                            ood_samples = torch.cat((ood_samples, negative_samples[index_prob]), 0)
-                        del new_dis
-                        del negative_samples
-                    # new focal loss.
-                    # breakpoint()
-
-                    assert len(ood_samples) == self.num_classes * self.args.select
-                    if not self.args.separate:
-                        src_logits = torch.cat((src_logits, outputs['cls_head'](ood_samples).unsqueeze(0)), 1)
-                        target_classes_onehot = torch.cat((target_classes_onehot,
-                                                           torch.zeros((target_classes_onehot.shape[0],
-                                                            len(ood_samples),target_classes_onehot.shape[2])).cuda()), 1)
-                        # print('hhh')
-                        loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-                        losses = {'loss_ce': loss_ce}
-                    else:
-                        # pass
-                        loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes,
-                                                     alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-                        loss_additional = self.args.separate_loss_weight * F.binary_cross_entropy_with_logits(outputs['cls_head'](ood_samples),
-                                                           torch.zeros((len(ood_samples), target_classes_onehot.shape[2])).cuda())
-                        # breakpoint()
-                        losses = {'loss_ce': loss_ce, 'loss_separate': loss_additional}
+        idx = self._get_src_permutation_idx(indices)
+        target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
 
 
-                    del ood_samples
-                else:
-                    gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                    id_samples = outputs['pen_features'][idx]
-                    # maintaining an ID data queue for each class.
-                    for index in range(len(gt_classes_numpy)):
-                        dict_key = gt_classes_numpy[index]
-                        if self.number_dict[dict_key] < self.args.sample_number:
-                            self.data_dict[dict_key][self.number_dict[dict_key]] = id_samples[index].detach()
-                            self.number_dict[dict_key] += 1
+        target_classes = torch.full(src_logits.shape[:2], self.num_classes,
+                                    dtype=torch.int64, device=src_logits.device)
+        target_classes[idx] = target_classes_o
 
-                    # focal loss.
-                    loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha,
-                                                 gamma=2) * src_logits.shape[1]
-                    losses = {'loss_ce': loss_ce}
+        target_classes_onehot = torch.zeros(
+            [src_logits.shape[0],
+             src_logits.shape[1],
+             src_logits.shape[2] + 1],
+            dtype=src_logits.dtype,
+            layout=src_logits.layout,
+            device=src_logits.device)
+        target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
 
-            elif self.args.center_loss:
-                if self.args.center_loss_scheme_v1:
-                    sum_temp = 0
-                    for index in range(self.num_classes):
-                        sum_temp += self.number_dict[index]
-                    # breakpoint()
-                    if sum_temp == self.num_classes * self.args.sample_number and epoch < self.start_epoch:
-                        gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                        id_samples = outputs['pen_features'][idx]
-                        # maintaining an ID data queue for each class.
-                        for index in range(len(gt_classes_numpy)):
-                            dict_key = gt_classes_numpy[index]
-                            self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                                  id_samples[index].detach().view(1, -1)), 0)
+        target_classes_onehot = target_classes_onehot[:,:,:-1]
 
-                        # focal loss.
-                        loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-                        losses = {'loss_ce': loss_ce}
+        if self.args.siren:
+            if len(idx[0]) != 0:
+                id_samples = outputs['project_features'][idx]
+                for index in range(len(target_classes_o)):
+                    self.prototypes.data[target_classes_o[index]] = \
+                        F.normalize(0.05 * F.normalize(id_samples[index], p=2, dim=-1) + \
+                      0.95 * self.prototypes.data[target_classes_o[index]], p=2, dim=-1)
 
-                    elif sum_temp == self.num_classes * self.args.sample_number and epoch >= self.start_epoch:
-                        gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                        id_samples = outputs['pen_features'][idx]
-                        # maintaining an ID data queue for each class.
-                        for index in range(len(gt_classes_numpy)):
-                            dict_key = gt_classes_numpy[index]
-                            self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                                  id_samples[index].detach().view(1, -1)), 0)
-                        # center_loss.
-                        for index in range(self.num_classes):
-                            if index == 0:
-                                temp = self.data_dict[index].mean(0)
-                                mean_embed_id = temp.view(1, -1)
-                            else:
-                                temp = self.data_dict[index].mean(0)
-                                mean_embed_id = torch.cat((mean_embed_id,
-                                                           temp.view(1, -1)), 0)
-                        # breakpoint()
-                        if len(idx[0]) != 0:
-                            cosine_logits = F.cosine_similarity(mean_embed_id.unsqueeze(0).repeat(len(id_samples), 1, 1),
-                                                id_samples.unsqueeze(1).repeat(1, len(mean_embed_id), 1), 2)
-                            cosine_similarity_loss = self.criterion(cosine_logits, target_classes_o)
-                            loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha,
-                                                         gamma=2) * src_logits.shape[1]
-                            # print(cosine_similarity_loss)
-                            # breakpoint()
-                            losses = {'loss_ce': loss_ce,
-                                      'loss_center': self.args.center_weight * cosine_similarity_loss}
-                        else:
-                            print(idx)
-                            # breakpoint()
-                            loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes,
-                                                         alpha=self.focal_alpha,
-                                                         gamma=2) * src_logits.shape[1]
-                            losses = {'loss_ce': loss_ce}
-                    else:
-                        gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                        id_samples = outputs['pen_features'][idx]
-                        # maintaining an ID data queue for each class.
-                        for index in range(len(gt_classes_numpy)):
-                            dict_key = gt_classes_numpy[index]
-                            if self.number_dict[dict_key] < self.args.sample_number:
-                                self.data_dict[dict_key][self.number_dict[dict_key]] = id_samples[index].detach()
-                                self.number_dict[dict_key] += 1
+                cosine_logits = F.cosine_similarity(
+                    self.prototypes.data.detach().unsqueeze(0).repeat(len(id_samples), 1, 1),
+                        id_samples.unsqueeze(1).repeat(1, len(self.prototypes.data), 1), 2)
 
-                        # focal loss.
-                        loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-                        losses = {'loss_ce': loss_ce}
-                elif self.args.center_loss_scheme_project:
-                    if len(idx[0]) != 0:
-                        id_samples = outputs['project_features'][idx]
-                        for index in range(len(target_classes_o)):
-                            if self.args.center_revise:
-                                # breakpoint()
-                                self.prototypes.data[target_classes_o[index]] = \
-                                    F.normalize(0.05 * F.normalize(id_samples[index], p=2, dim=-1) + \
-                                  0.95 * self.prototypes.data[target_classes_o[index]], p=2, dim=-1)
-                            else:
-                                self.prototypes.data[target_classes_o[index]] = \
-                                    0.05 * id_samples[index] + \
-                                     0.95 * self.prototypes.data[target_classes_o[index]]
-                            # breakpoint()
-                        cosine_logits = F.cosine_similarity(
-                            self.prototypes.data.detach().unsqueeze(0).repeat(len(id_samples), 1, 1),
-                                id_samples.unsqueeze(1).repeat(1, len(self.prototypes.data), 1), 2)
-                        # breakpoint()
-                        if self.args.center_adaptive:
-                            cosine_similarity_loss = \
-                                self.weighted_softmax_loss(
-                                    cosine_logits / self.args.center_temp,
-                                     target_classes_o, outputs['center_adaptive'])
-                        elif self.args.center_vmf_learnable_kappa:
-                            weight_before_exp = \
-                                vMFLogPartition.apply(self.args.project_dim,
-                                F.relu(outputs['learnable_kappa'].weight.view(-1, 1)))
-                            weight_before_exp = weight_before_exp.exp()
-                            if self.args.add_class_prior:
-                                cosine_similarity_loss = self.weighted_vmf_loss(
-                                    cosine_logits * F.relu(outputs['learnable_kappa'].weight.view(1, -1)),
-                                    weight_before_exp,
-                                    target_classes_o, outputs['class_prior'].weight)
-                            else:
-                                cosine_similarity_loss = self.weighted_vmf_loss(
-                                    cosine_logits * F.relu(outputs['learnable_kappa'].weight.view(1, -1)),
-                                    weight_before_exp,
-                                    target_classes_o)
-                        elif self.args.center_vmf_fix_kappa:
-                            weight_before_exp = \
-                                vMFLogPartition.apply(self.args.project_dim,
-                                                 self.args.learnable_kappa_init * torch.ones(
-                                                     self.num_classes).cuda().view(-1, 1))
-                            weight_before_exp = weight_before_exp.exp()
-                            cosine_similarity_loss = self.weighted_vmf_loss(
-                                cosine_logits * self.args.learnable_kappa_init\
-                                * torch.ones(self.num_classes).cuda().view(1, -1),
-                                weight_before_exp,
-                                target_classes_o)
-                        elif self.args.center_vmf_no_zp:
-                            weight_before_exp = torch.ones(self.num_classes).cuda()
-                            cosine_similarity_loss = self.weighted_vmf_loss(
-                                cosine_logits * F.relu(outputs['learnable_kappa'].weight.view(1, -1)),
-                                weight_before_exp,
-                                target_classes_o)
-                        elif self.args.center_vmf_no_kappa:
-                            weight_before_exp = F.relu(outputs['learnable_kappa'].weight)
-                            cosine_similarity_loss = self.weighted_vmf_loss(
-                                cosine_logits,
-                                weight_before_exp,
-                                target_classes_o)
+                weight_before_exp = \
+                    vMFLogPartition.apply(self.args.project_dim,
+                    F.relu(outputs['learnable_kappa'].weight.view(-1, 1)))
+                weight_before_exp = weight_before_exp.exp()
 
-                        elif self.args.center_vmf_estimate_kappa:
-                            cosine_similarity_loss = (outputs['project_head'](torch.zeros(1,256).cuda())- outputs['project_head'](torch.zeros(1,256).cuda()))**2
-                            cosine_similarity_loss = cosine_similarity_loss.sum()
-                            sum_temp = 0
-                            for index in range(self.num_classes):
-                                sum_temp += self.number_dict[index]
-                            # breakpoint()
-                            gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                            id_samples = F.normalize(outputs['project_features'][idx], dim=-1, p=2)
-                            if sum_temp == self.num_classes * self.args.sample_number and epoch < self.start_epoch:
-                                # maintaining an ID data queue for each class.
-                                for index in range(len(gt_classes_numpy)):
-                                    dict_key = gt_classes_numpy[index]
-                                    self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                                          id_samples[index].detach().view(1, -1)),
-                                                                         0)
+                cosine_similarity_loss = self.weighted_vmf_loss(
+                    cosine_logits * F.relu(outputs['learnable_kappa'].weight.view(1, -1)),
+                    weight_before_exp,
+                    target_classes_o)
 
-                            elif sum_temp == self.num_classes * self.args.sample_number and epoch >= self.start_epoch:
-                                # maintaining an ID data queue for each class.
-                                for index in range(len(gt_classes_numpy)):
-                                    dict_key = gt_classes_numpy[index]
-                                    self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                                          id_samples[index].detach().view(1, -1)),
-                                                                         0)
-                                kappa_all = []
-                                for index in range(self.num_classes):
-                                    temp = self.data_dict[index].mean(0)
-                                    xm_norm = (temp ** 2).sum().sqrt()
-                                    kappa_all.append((self.args.project_dim * xm_norm - xm_norm ** 3) / (1 - xm_norm ** 2))
-                                kappa_all = torch.stack(kappa_all)
-                                # breakpoint()
-                                weight_before_exp = vMFLogPartition.apply(self.args.project_dim,
-                                                                          kappa_all.view(-1,1))
-                                weight_before_exp = weight_before_exp.exp()
-                                cosine_similarity_loss = self.weighted_vmf_loss(
-                                    cosine_logits * kappa_all.view(1, -1),
-                                    weight_before_exp,
-                                    target_classes_o)
-
-
-                            else:
-                                # maintaining an ID data queue for each class.
-                                for index in range(len(gt_classes_numpy)):
-                                    dict_key = gt_classes_numpy[index]
-                                    if self.number_dict[dict_key] < self.args.sample_number:
-                                        self.data_dict[dict_key][self.number_dict[dict_key]] = id_samples[
-                                            index].detach()
-                                        self.number_dict[dict_key] += 1
-
-                        else:
-                            cosine_similarity_loss = self.criterion(
-                                cosine_logits / self.args.center_temp,
-                                target_classes_o)
-                        # breakpoint()
-                        assert len(idx[0]) == len(target_classes_o)
-                        loss_ce = sigmoid_focal_loss(src_logits,
-                                                     target_classes_onehot,
-                                                     num_boxes,
-                                                     alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-                        # breakpoint()
-                        if self.args.center_vmf_learnable_kappa or self.args.center_vmf_no_zp:
-                            if epoch == self.args.epochs - 1:
-                                np.save(self.args.output_dir + '/proto.npy',
-                                        self.prototypes.cpu().data.numpy())
-                                np.save(self.args.output_dir + '/kappa.npy',
-                                        outputs['learnable_kappa'].weight.cpu().data.numpy())
-                                if self.args.add_class_prior:
-                                    np.save(self.args.output_dir + '/prior.npy',
-                                            outputs['class_prior'].weight.cpu().data.numpy())
-                        elif self.args.center_vmf_fix_kappa or self.args.center_vmf_no_kappa:
-                            if epoch == self.args.epochs - 1:
-                                np.save(self.args.output_dir + '/proto.npy',
-                                        self.prototypes.cpu().data.numpy())
-                                # np.save(self.args.output_dir + '/kappa.npy',
-                                # outputs['learnable_kappa'].weight.cpu().data.numpy())
-                        elif self.args.center_vmf_estimate_kappa:
-                            if epoch == self.args.epochs - 1:
-                                np.save(self.args.output_dir + '/proto.npy',
-                                        self.prototypes.cpu().data.numpy())
-                                np.save(self.args.output_dir + '/kappa.npy',
-                                        kappa_all.cpu().data.numpy())
-                                np.save(self.args.output_dir + '/queue.npy',
-                                        self.data_dict.cpu().data.numpy())
-                        else:
-                            pass
-                        if self.args.vmf:
-                            lr_reg_loss = torch.tensor(0).cuda()
-                            sum_temp = 0
-                            for index in range(self.num_classes):
-                                sum_temp += self.number_dict[index]
-                            # breakpoint()
-                            gt_classes_numpy = target_classes_o.int().cpu().data.numpy()
-                            id_samples = F.normalize(outputs['project_features'][idx], dim=-1, p=2)
-                            if sum_temp == self.num_classes * self.args.sample_number and epoch < self.start_epoch:
-                                # maintaining an ID data queue for each class.
-                                for index in range(len(gt_classes_numpy)):
-                                    dict_key = gt_classes_numpy[index]
-                                    self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                                          id_samples[index].detach().view(1, -1)), 0)
-
-                            elif sum_temp == self.num_classes * self.args.sample_number and epoch >= self.start_epoch:
-                                # maintaining an ID data queue for each class.
-                                for index in range(len(gt_classes_numpy)):
-                                    dict_key = gt_classes_numpy[index]
-                                    self.data_dict[dict_key] = torch.cat((self.data_dict[dict_key][1:],
-                                                                          id_samples[index].detach().view(1, -1)), 0)
-                                ##########################################
-                                # vmf estimation, very slow.
-                                # for index in range(self.num_classes):
-                                #     temp = self.data_dict[index].mean(0)
-                                #     xm_norm = (temp ** 2).sum().sqrt()
-                                #     # breakpoint()
-                                #     mu0 = temp / xm_norm
-                                #     # Full-batch ML estimator
-                                #     kappa0 = (self.args.project_dim * xm_norm - xm_norm ** 3) / (1 - xm_norm ** 2)
-                                #     vmf_true = VonMisesFisher(mu0.view(1,-1), kappa0.view(1,-1))
-                                #     negative_samples = vmf_true.rsample(torch.Size([self.args.sample_from]))
-                                #     prob_density = vmf_true.log_prob(negative_samples).view(-1)
-                                #     # print(prob_density.shape, vmf_true.log_prob(negative_samples).shape)
-                                #     # keep the data in the low density area.
-                                #     cur_samples, index_prob = torch.topk(- prob_density, self.args.select)
-                                #
-                                #     if index == 0:
-                                #         ood_samples = negative_samples.squeeze()[index_prob]
-                                #     else:
-                                #         ood_samples = torch.cat((ood_samples, negative_samples.squeeze()[index_prob]), 0)
-                                #     del vmf_true
-                                #     del negative_samples
-                                ##########################################
-                                # faster version.
-                                # temp = self.data_dict.mean(1)#20,16
-                                # xm_norm = (temp ** 2).sum(1).sqrt()#20
-                                # mu0 = temp / xm_norm.unsqueeze(1)
-                                # # Full-batch ML estimator
-                                # kappa0 = (self.args.project_dim * xm_norm - xm_norm ** 3) / (1 - xm_norm ** 2)
-                                # vmf_true = VonMisesFisher(mu0, kappa0.view(-1,1))
-                                # # breakpoint()
-                                # negative_samples = vmf_true.rsample(torch.Size([self.args.sample_from]))
-                                # prob_density = vmf_true.log_prob(negative_samples)
-                                # # keep the data in the low density area.
-                                # cur_samples, index_prob = torch.topk(- prob_density, self.args.select, dim=0)
-                                # for index in range(self.num_classes):
-                                #     if index == 0:
-                                #         ood_samples = negative_samples[index_prob[:, index], index, :]
-                                #     else:
-                                #         ood_samples = torch.cat((ood_samples, negative_samples[index_prob[:, index], index, :]), 0)
-                                #
-                                # del vmf_true
-                                # del negative_samples
-                                ##########################################
-                                for index in range(self.num_classes):
-                                    temp = self.data_dict[index].mean(0)
-                                    xm_norm = (temp ** 2).sum().sqrt()
-                                    # Full-batch ML estimator
-                                    mu0 = temp / xm_norm
-                                    kappa0 = (self.args.project_dim * xm_norm - xm_norm ** 3) / (1 - xm_norm ** 2)
-                                    # print(kappa0)
-                                    vmf_true = vMF(x_dim=self.args.project_dim).cuda()
-                                    vmf_true.set_params(mu=mu0, kappa=kappa0)
-                                    negative_samples = vmf_true.sample(N=self.args.sample_from, rsf=1)
-                                    prob_density = vmf_true(negative_samples)
-                                    # breakpoint()
-                                    # keep the data in the low density area.
-                                    cur_samples, index_prob = torch.topk(- prob_density, self.args.select)
-
-                                    if index == 0:
-                                        ood_samples = negative_samples.squeeze()[index_prob]
-                                    else:
-                                        ood_samples = torch.cat((ood_samples, negative_samples.squeeze()[index_prob]), 0)
-                                    del vmf_true
-                                    del negative_samples
-
-
-                                # breakpoint()
-                                if self.args.vmf_add_sample:
-                                    indices_select = np.random.choice(self.num_classes * self.args.sample_number,
-                                                     len(ood_samples), replace=False)
-
-                                    added_samples = self.data_dict.view(-1, self.args.project_dim)[indices_select]
-                                    id_samples = torch.cat((id_samples, added_samples), 0)
-
-                                    input_for_lr = torch.cat((outputs['sampling_cls_layer'](id_samples),
-                                                              outputs['sampling_cls_layer'](ood_samples)), 0)
-                                    labels_for_lr = torch.cat((torch.ones(len(id_samples)).cuda(),
-                                                               torch.zeros(len(ood_samples)).cuda()), -1)
-                                    # breakpoint()
-                                elif self.args.vmf_multi_classifer:
-                                    input_for_lr = None
-                                    labels_for_lr = None
-                                    for label_tmp in target_classes_o.unique():
-                                        # breakpoint()
-                                        input_for_lr_tmp = torch.cat((outputs['sampling_cls_layer'][label_tmp](id_samples[target_classes_o==label_tmp]),
-                                                   outputs['sampling_cls_layer'][label_tmp](ood_samples[self.args.select*label_tmp:
-                                                                                            self.args.select*(label_tmp+1)])), 0)
-                                        labels_for_lr_tmp = torch.cat((torch.ones(len(id_samples[target_classes_o==label_tmp])).cuda(),
-                                                               torch.zeros(self.args.select).cuda()), -1)
-                                        if input_for_lr == None:
-                                            input_for_lr = input_for_lr_tmp
-                                            labels_for_lr = labels_for_lr_tmp
-                                        else:
-                                            input_for_lr = torch.cat((input_for_lr, input_for_lr_tmp), 0)
-                                            labels_for_lr = torch.cat((labels_for_lr, labels_for_lr_tmp), -1)
-                                else:
-                                    input_for_lr = torch.cat((outputs['sampling_cls_layer'](id_samples),
-                                                              outputs['sampling_cls_layer'](ood_samples)), 0)
-                                    labels_for_lr = torch.cat((torch.ones(len(id_samples)).cuda(),
-                                                               torch.zeros(len(ood_samples)).cuda()), -1)
-                                if self.args.vmf_imbalance:
-                                    criterion = torch.nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1,10])).cuda().float())
-                                else:
-                                    criterion = torch.nn.CrossEntropyLoss()
-
-                                if self.args.vmf_loss_single_bit:
-                                    if not self.args.vmf_focal_loss:
-                                        lr_reg_loss = F.binary_cross_entropy_with_logits(input_for_lr.view(-1), labels_for_lr)
-                                    else:
-                                        # breakpoint()
-                                        lr_reg_loss = sigmoid_focal_loss_binary(input_for_lr, labels_for_lr.unsqueeze(1), len(id_samples), alpha=self.focal_alpha,
-                                                     gamma=2) * len(input_for_lr)
-                                elif self.args.vmf_multi_classifer:
-                                    lr_reg_loss = F.binary_cross_entropy_with_logits(input_for_lr.view(-1),
-                                                                                     labels_for_lr)
-                                else:
-                                    lr_reg_loss = criterion(input_for_lr, labels_for_lr.long())
-                            else:
-                                # maintaining an ID data queue for each class.
-                                for index in range(len(gt_classes_numpy)):
-                                    dict_key = gt_classes_numpy[index]
-                                    if self.number_dict[dict_key] < self.args.sample_number:
-                                        self.data_dict[dict_key][self.number_dict[dict_key]] = id_samples[index].detach()
-                                        self.number_dict[dict_key] += 1
-
-                            if not self.args.vmf_multi_classifer:
-                                loss_dummy = (outputs['sampling_cls_layer'](torch.zeros(1, self.args.project_dim).cuda()) \
-                                              - outputs['sampling_cls_layer'](
-                                    torch.zeros(1, self.args.project_dim).cuda())) ** 2
-                            else:
-                                loss_dummy = 0
-                                for index_tmp in range(self.num_classes):
-                                    loss_dummy += (outputs['sampling_cls_layer'][index_tmp](
-                                        torch.zeros(1, self.args.project_dim).cuda()) \
-                                              - outputs['sampling_cls_layer'][index_tmp](
-                                    torch.zeros(1, self.args.project_dim).cuda())) ** 2
-
-                            # print(loss_dummy.sum())
-                            loss_vmf = self.args.vmf_weight * lr_reg_loss + loss_dummy.sum()
-
-                            losses = {'loss_ce': loss_ce,
-                                      'loss_vmf': loss_vmf,
-                                      'loss_center': self.args.center_weight * cosine_similarity_loss}
-                        else:
-                            losses = {'loss_ce': loss_ce,
-                                      'loss_center': self.args.center_weight * cosine_similarity_loss}
-                        # breakpoint()
-                    else:
-                        print(idx)
-                        # breakpoint()
-                        if not self.args.on_the_pen_ours:
-                            if self.args.siren_on_the_logits:
-                                loss_dummy = (outputs['project_head'](torch.zeros(1, self.num_classes).cuda()) - \
-                                              outputs['project_head'](torch.zeros(1, self.num_classes).cuda())) ** 2
-                            else:
-                                loss_dummy = (outputs['project_head'](torch.zeros(1,256).cuda())- \
-                                              outputs['project_head'](torch.zeros(1,256).cuda()))**2
-                        else:
-                            loss_dummy = (outputs['project_head'](torch.zeros(1, 80).cuda()) - \
-                                          outputs['project_head'](torch.zeros(1, 80).cuda())) ** 2
-                        loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes,
-                                                     alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-                        # print(loss_dummy)
-                        if self.args.center_adaptive:
-                            loss_dummy_ca = (outputs['center_adaptive'](torch.zeros(1, self.num_classes).cuda()) - outputs[
-                                'center_adaptive'](torch.zeros(1, self.num_classes).cuda())) ** 2
-                            if self.args.vmf:
-                                if not self.args.vmf_multi_classifer:
-                                    loss_dummy1 = (outputs['sampling_cls_layer'](torch.zeros(1, self.args.project_dim).cuda()) - outputs[
-                                        'sampling_cls_layer'](torch.zeros(1, self.args.project_dim).cuda())) ** 2
-                                else:
-                                    loss_dummy1 = 0
-                                    for index_tmp in range(self.num_classes):
-                                        loss_dummy1 += (outputs['sampling_cls_layer'][index_tmp](
-                                            torch.zeros(1, self.args.project_dim).cuda()) - outputs[
-                                        'sampling_cls_layer'][index_tmp](torch.zeros(1, self.args.project_dim).cuda())) ** 2
-                                losses = {'loss_ce': loss_ce,
-                                          'loss_vmf': loss_dummy1.sum(),
-                                          'loss_center': loss_dummy.sum()  + loss_dummy_ca.sum() }
-                            else:
-                                losses = {'loss_ce': loss_ce, 'loss_center': loss_dummy.sum() + loss_dummy_ca.sum()}
-                        elif self.args.vmf:
-                            if not self.args.vmf_multi_classifer:
-                                loss_dummy1 = (outputs['sampling_cls_layer'](torch.zeros(1, self.args.project_dim).cuda()) - outputs[
-                                    'sampling_cls_layer'](torch.zeros(1, self.args.project_dim).cuda())) ** 2
-                            else:
-                                loss_dummy1 = 0
-                                for index_tmp in range(self.num_classes):
-                                    loss_dummy1 += (outputs['sampling_cls_layer'][index_tmp](
-                                            torch.zeros(1, self.args.project_dim).cuda()) - outputs[
-                                        'sampling_cls_layer'][index_tmp](torch.zeros(1, self.args.project_dim).cuda())) ** 2
-                            losses = {'loss_ce': loss_ce,
-                                      'loss_vmf': loss_dummy1.sum(),
-                                      'loss_center': loss_dummy.sum()}
-                        elif self.args.center_vmf_learnable_kappa or \
-                                self.args.center_vmf_no_zp or \
-                                self.args.center_vmf_no_kappa:
-                            loss_dummy_lk = (outputs['learnable_kappa'](
-                                torch.zeros(1, self.num_classes).cuda()) -
-                                             outputs[
-                                'learnable_kappa'](torch.zeros(
-                                                     1, self.num_classes).cuda())) ** 2
-                            if self.args.add_class_prior:
-                                loss_dummy_cp = (outputs['class_prior'](
-                                    torch.zeros(1, self.num_classes).cuda()) -
-                                                 outputs[
-                                                     'class_prior'](torch.zeros(
-                                                     1, self.num_classes).cuda())) ** 2
-                                losses = {'loss_ce': loss_ce,
-                                          'loss_center': loss_dummy.sum() \
-                                                         + loss_dummy_lk.sum() + \
-                                                         loss_dummy_cp.sum()}
-                            else:
-                                losses = {'loss_ce': loss_ce,
-                                          'loss_center': loss_dummy.sum() \
-                                                         + loss_dummy_lk.sum()}
-                        else:
-                            losses = {'loss_ce': loss_ce, 'loss_center': loss_dummy.sum()}
-
-                else:
-                    if len(idx[0]) != 0:
-                        id_samples = outputs['pen_features'][idx]
-
-                        for index in range(len(target_classes_o)):
-                            if self.args.center_revise:
-                                # breakpoint()
-                                self.prototypes.data[target_classes_o[index]] = \
-                                    F.normalize(0.05 * F.normalize(id_samples[index], p=2, dim=-1) + \
-                                  0.95 * self.prototypes.data[target_classes_o[index]], p=2, dim=-1)
-                            else:
-                                self.prototypes.data[target_classes_o[index]] = \
-                                    0.05 * id_samples[index] + \
-                                     0.95 * self.prototypes.data[target_classes_o[index]]
-                        # breakpoint()
-                        cosine_logits = F.cosine_similarity(
-                            self.prototypes.data.clone().detach().unsqueeze(0).repeat(len(id_samples),
-                                                                                      1, 1),
-                                    id_samples.unsqueeze(1).repeat(
-                                        1,
-                                        len(self.prototypes.data),
-                                        1), 2)
-                        # breakpoint()
-                        if self.args.center_vmf_learnable_kappa:
-                            weight_before_exp = \
-                                vMFLogPartition.apply(len(id_samples[0]),
-                                                      F.relu(outputs['learnable_kappa'].weight.view(-1, 1)))
-                            # breakpoint()
-                            weight_before_exp = weight_before_exp.exp()
-                            cosine_similarity_loss = self.weighted_vmf_loss(
-                                cosine_logits * F.relu(outputs['learnable_kappa'].weight.view(1, -1)),
-                                weight_before_exp,
-                                target_classes_o)
-                        else:
-                            cosine_similarity_loss = self.criterion(
-                                cosine_logits / self.args.center_temp,
-                                target_classes_o)
-
-                        assert len(idx[0]) == len(target_classes_o)
-                        loss_ce = sigmoid_focal_loss(src_logits,
-                                                     target_classes_onehot,
-                                                     num_boxes,
-                                                     alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-                        if self.args.center_vmf_learnable_kappa or self.args.center_vmf_no_zp:
-                            if epoch == self.args.epochs - 1:
-                                np.save(self.args.output_dir + '/proto.npy',
-                                        self.prototypes.cpu().data.numpy())
-                                np.save(self.args.output_dir + '/kappa.npy',
-                                        outputs['learnable_kappa'].weight.cpu().data.numpy())
-                        losses = {'loss_ce': loss_ce,
-                                  'loss_center': self.args.center_weight * cosine_similarity_loss}
-                    else:
-                        print(idx)
-                        # breakpoint()
-                        loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes,
-                                                     alpha=self.focal_alpha,
-                                                     gamma=2) * src_logits.shape[1]
-
-                        # if self.args.center_vmf_learnable_kappa:
-                        loss_dummy_lk = (outputs['learnable_kappa'](
-                            torch.zeros(1, self.num_classes).cuda()) -
-                                         outputs[
-                            'learnable_kappa'](torch.zeros(
-                                                 1, self.num_classes).cuda())) ** 2
-                        losses = {'loss_ce': loss_ce,
-                                  'loss_center': loss_dummy_lk.sum()}
-                        # losses = {'loss_ce': loss_ce}
-
-            elif self.args.dismax:
-                if len(idx[0]) != 0:
-                    id_samples = outputs['pen_features'][idx]
-                    distances_from_normalized_vectors = torch.cdist(
-                        F.normalize(id_samples), F.normalize(outputs['dismax_prototypes']), p=2.0,
-                        compute_mode="donot_use_mm_for_euclid_dist") / math.sqrt(2.0)
-                    isometric_distances = torch.abs(outputs['dismax_distance_scale']) * distances_from_normalized_vectors
-                    dismax_logits = -(isometric_distances + isometric_distances.mean(dim=1, keepdim=True))
-                    # The temperature may be calibrated after training to improve uncertainty estimation.
-
-                    cosine_similarity_loss = F.cross_entropy(10 * dismax_logits, target_classes_o)
-
-                    assert len(idx[0]) == len(target_classes_o)
-                    loss_ce = sigmoid_focal_loss(src_logits,
-                                                 target_classes_onehot,
-                                                 num_boxes,
-                                                 alpha=self.focal_alpha,
-                                                 gamma=2) * src_logits.shape[1]
-
-                    losses = {'loss_ce': loss_ce,
-                              'loss_dismax': self.args.dismax_weight * cosine_similarity_loss}
-                else:
-                    print(idx)
-                    # breakpoint()
-                    loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes,
-                                                 alpha=self.focal_alpha,
-                                                 gamma=2) * src_logits.shape[1]
-
-                    # if self.args.center_vmf_learnable_kappa:
-                    loss_dummy_lk = (outputs['dismax_prototypes'] -
-                                     outputs[
-                                         'dismax_prototypes']) ** 2 + \
-                                    (outputs['dismax_distance_scale'] -
-                                     outputs[
-                                         'dismax_distance_scale']) ** 2
-
-                    losses = {'loss_ce': loss_ce,
-                              'loss_dismax': loss_dummy_lk.sum()}
-                    # losses = {'loss_ce': loss_ce}
-            elif self.args.godin:
-                loss_ce1 = sigmoid_focal_loss(outputs['godin'],
-                                             target_classes_onehot,
-                                             num_boxes,
-                                             alpha=self.focal_alpha,
-                                             gamma=2) * src_logits.shape[1]
+                assert len(idx[0]) == len(target_classes_o)
                 loss_ce = sigmoid_focal_loss(src_logits,
                                              target_classes_onehot,
                                              num_boxes,
                                              alpha=self.focal_alpha,
                                              gamma=2) * src_logits.shape[1]
-                losses = {'loss_ce': loss_ce, 'loss_godin': loss_ce1}
-            elif self.args.csi:
-                # breakpoint()
-                loss_ce = sigmoid_focal_loss(src_logits,
-                                             target_classes_onehot,
-                                             num_boxes,
-                                             alpha=self.focal_alpha,
-                                             gamma=2) * src_logits.shape[1]
-                outputs_without_aux_csi = {k: v for k, v in outputs['out_csi'].items() if
-                                           k != 'aux_outputs' and k != 'enc_outputs'}
-                indices_csi = self.matcher(outputs_without_aux_csi, outputs['out_csi']['new_targets'])
-                idx_csi = self._get_src_permutation_idx(indices_csi)
-                if len(idx[0]) != 0 and len(idx_csi[0]) != 0:
-                    feat_aug = outputs['out_csi']['pen_features'][idx_csi]
-                    feat_ori = outputs['pen_features'][idx]
 
-                    predictions_aug = outputs['out_csi']['csi_cls'](feat_aug)
-                    label_aug = torch.ones(len(predictions_aug)).cuda() * outputs['out_csi']['rotate_degree']
-                    # breakpoint()
-                    criterion = torch.nn.CrossEntropyLoss()
-                    aug_loss = criterion(predictions_aug, label_aug.long())
-                    contrastive_data = torch.cat([feat_ori, feat_aug], 0)
-                    loss_contrastive = self.NT_xent(contrastive_data)
-                    losses = {'loss_ce': loss_ce, 'loss_csi': loss_contrastive + aug_loss}
-                else:
-                    loss_dummy = (outputs['out_csi']['csi_cls'](torch.zeros(1, 256).cuda()) - \
-                                  outputs['out_csi']['csi_cls'](torch.zeros(1, 256).cuda())) ** 2
-                    losses = {'loss_ce': loss_ce, 'loss_csi': loss_dummy.sum()}
+                if epoch == self.args.epochs - 1:
+                    np.save(self.args.output_dir + '/proto.npy',
+                            self.prototypes.cpu().data.numpy())
+                    np.save(self.args.output_dir + '/kappa.npy',
+                            outputs['learnable_kappa'].weight.cpu().data.numpy())
+
+
+                losses = {'loss_ce': loss_ce,
+                          'loss_vmf': self.args.vmf_weight * cosine_similarity_loss}
+
             else:
-                loss_ce = sigmoid_focal_loss(src_logits,
-                                             target_classes_onehot,
-                                             num_boxes,
+                print(idx)
+                loss_dummy = (outputs['project_head'](torch.zeros(1,256).cuda())- \
+                              outputs['project_head'](torch.zeros(1,256).cuda()))**2
+
+                loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes,
                                              alpha=self.focal_alpha,
                                              gamma=2) * src_logits.shape[1]
-                losses = {'loss_ce': loss_ce}
+                loss_dummy_lk = (outputs['learnable_kappa'](
+                    torch.zeros(1, self.num_classes).cuda()) -
+                                 outputs[
+                    'learnable_kappa'](torch.zeros(
+                                         1, self.num_classes).cuda())) ** 2
 
-            if log:
-                # TODO this should probably be a separate loss, not hacked in this one here
-                losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
-            return losses
+                losses = {'loss_ce': loss_ce,
+                          'loss_vmf': loss_dummy.sum() \
+                                         + loss_dummy_lk.sum()}
+
+
         else:
-            # breakpoint()
-            assert 'pred_logits' in outputs
-            src_logits = outputs['pred_logits']
+            loss_ce = sigmoid_focal_loss(src_logits,
+                                         target_classes_onehot,
+                                         num_boxes,
+                                         alpha=self.focal_alpha,
+                                         gamma=2) * src_logits.shape[1]
+            losses = {'loss_ce': loss_ce}
 
+        if log:
+            # TODO this should probably be a separate loss, not hacked in this one here
+            losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
+        return losses
 
-            assert 'objectness' in outputs
-            objectness_predictions = outputs['objectness']
-            idx = self._get_src_permutation_idx(indices)
-            target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
-            target_classes = torch.full(src_logits.shape[:2], self.num_classes,
-                                        dtype=torch.int64, device=src_logits.device)
-            target_classes[idx] = target_classes_o
-
-
-            ######
-            out_bbox = outputs['pred_boxes']
-            boxes1 = box_ops.box_cxcywh_to_xyxy(out_bbox)
-            scale_fct_attention_map = torch.from_numpy(
-                np.asarray([outputs['backbone_features'].shape[-1], outputs['backbone_features'].shape[-2],
-                            outputs['backbone_features'].shape[-1],
-                            outputs['backbone_features'].shape[-2]])).cuda().unsqueeze(0)
-            # breakpoint()
-            boxes_for_attention_map = boxes1 * scale_fct_attention_map[:, None, :].to(torch.float32)
-            boxes_for_attention_map = boxes_for_attention_map.int()
-            boxes_for_attention_map[boxes_for_attention_map < 0] = 0
-            masks_attention_map = torch.zeros(
-                (outputs['backbone_features'].shape[0], 300, outputs['backbone_features'].shape[2], outputs['backbone_features'].shape[3])).cuda()
-
-            attention_map = outputs['backbone_features'].mean(1).unsqueeze(1).repeat(1, 300, 1, 1)
-            for image_index in range(outputs['backbone_features'].shape[0]):
-                for index in range(300):
-                    masks_attention_map[image_index][index][boxes_for_attention_map[image_index][index][1]: boxes_for_attention_map[image_index][index][3],
-                    boxes_for_attention_map[image_index][index][0]: boxes_for_attention_map[image_index][index][2]] = 1
-
-            all_am_values = masks_attention_map.view(outputs['backbone_features'].shape[0], 300, -1) * attention_map.view(outputs['backbone_features'].shape[0], 300, -1)
-            all_am_values = all_am_values.mean(-1)
-            indices = torch.topk(all_am_values, 5, dim=-1)[1]
-
-            batch_idx = torch.cat([torch.full_like(src, i) for i, src in enumerate(indices)])
-            src_idx = torch.cat([src for src in indices])
-            indices = (batch_idx, src_idx)
-            target_classes[indices] = src_logits.shape[2] - 1
-
-            target_classes_onehot = torch.zeros([src_logits.shape[0], src_logits.shape[1], src_logits.shape[2] + 1],
-                                                dtype=src_logits.dtype, layout=src_logits.layout, device=src_logits.device)
-            target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
-
-            #######
-            target_classes_onehot = target_classes_onehot[:, :, :-1]
-            # breakpoint()
-            loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes + len(indices[0]), alpha=self.focal_alpha, gamma=2) * \
-                      src_logits.shape[1]
-
-
-
-            # the objectness loss.
-            objectness_classes = torch.full(objectness_predictions.shape[:2], 0, dtype=torch.int64, device=src_logits.device).cuda()
-            indices_objectness = (torch.cat((indices[0], idx[0].cuda())), torch.cat((indices[1], idx[1].cuda())))
-            # breakpoint()
-            objectness_classes[indices_objectness] = 1
-            objectness_classes_onehot = torch.zeros([objectness_predictions.shape[0], objectness_predictions.shape[1], objectness_predictions.shape[2]],
-                                                dtype=objectness_predictions.dtype, layout=objectness_predictions.layout, device=objectness_predictions.device)
-            # breakpoint()
-            objectness_classes_onehot.scatter_(2, objectness_classes.unsqueeze(-1), 1)
-            loss_ce_obj = sigmoid_focal_loss(objectness_predictions, objectness_classes_onehot, len(indices_objectness[0]), alpha=self.focal_alpha,
-                                         gamma=2) *   objectness_predictions.shape[1]
-
-            losses = {'loss_ce': loss_ce, 'loss_obj': loss_ce_obj * 0.1}# 'dummy_loss': dummy_loss}
-
-            if log:
-                # TODO this should probably be a separate loss, not hacked in this one here
-                losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
-            return losses
-
-    def get_similarity_matrix(self, x, eps=1e-5):
-        n = x.norm(p=2, dim=1, keepdim=True)
-        try:
-            # print(n * n.t())
-            return (x @ x.t()) / (n * n.t() + eps)#.clamp(min=eps)
-        except:
-            breakpoint()
-
-
-    def NT_xent(self, outputs, temperature=0.5, chunk=2, eps=1e-5):
-        '''
-            Compute NT_xent loss
-            - sim_matrix: (B', B') tensor for B' = B * chunk (first 2B are pos samples)
-        '''
-        sim_matrix = self.get_similarity_matrix(outputs)
-        B = sim_matrix.size(0) // chunk
-
-        sim_matrix = sim_matrix / temperature
-
-        pos_sim = torch.cat([sim_matrix[:B,:B].reshape(-1,1),sim_matrix[B:,B:].reshape(-1,1)])
-        neg_sim = torch.cat([sim_matrix[:B,B:].reshape(-1,1),sim_matrix[B:,:B].reshape(-1,1)])
-        labels_for_lr = torch.cat([torch.ones(len(pos_sim)).cuda(), torch.zeros(len(neg_sim)).cuda()],0)
-        loss = F.binary_cross_entropy_with_logits(torch.cat([pos_sim, neg_sim], 0), labels_for_lr.reshape(-1,1))
-
-        return loss
 
 
     @torch.no_grad()
@@ -1676,96 +626,51 @@ class PostProcess(nn.Module):
         """
         out_logits, out_bbox = outputs['pred_logits'], outputs['pred_boxes']
         out_pen_features = outputs['pen_features']
-        ### dismax ###
-        distances_from_normalized_vectors = torch.cdist(
-            F.normalize(out_pen_features), F.normalize(outputs['dismax_prototypes']), p=2.0,
-            compute_mode="donot_use_mm_for_euclid_dist") / math.sqrt(2.0)
-        isometric_distances = torch.abs(outputs['dismax_distance_scale']) * distances_from_normalized_vectors
-        out_pen_features = -(isometric_distances + isometric_distances.mean(dim=1, keepdim=True))
-        ### dismax ###
 
         out_project_features = None
         out_sampling_cls = None
         out_godin_h = None
-        if 'godin_h' in list(outputs.keys()):
-            out_godin_h = outputs['godin_h']
         if 'project_features' in list(outputs.keys()):
             out_project_features = outputs['project_features']
-            if 'sampling_cls_layer' in list(outputs.keys()):
-                if type(outputs['sampling_cls_layer']) == torch.nn.modules.container.Sequential:
-                    out_sampling_cls = F.softmax(
-                        outputs['sampling_cls_layer'](F.normalize(outputs['project_features'], p=2, dim=-1)), 2)
-                elif type(outputs['sampling_cls_layer']) == torch.nn.modules.container.ModuleList:
-                    for index_tmp in range(len(outputs['pred_logits'][0][0])):
-                        out_sampling_cls_tmp = F.sigmoid(
-                            outputs['sampling_cls_layer'][index_tmp](
-                                F.normalize(outputs['project_features'], p=2, dim=-1)))
-                        if out_sampling_cls == None:
-                            out_sampling_cls = out_sampling_cls_tmp
-                        else:
-                            out_sampling_cls = torch.cat((out_sampling_cls, out_sampling_cls_tmp), 2)
-                    # out_sampling_cls = torch.cat((out_sampling_cls.max(-1)[0].unsqueeze(2),
-                    #                               out_sampling_cls.mean(-1).unsqueeze(2)), 2)
 
-                else:
-                    if outputs['sampling_cls_layer'].weight.shape[0] == 1:
-                        out_sampling_cls = F.sigmoid(
-                            outputs['sampling_cls_layer'](F.normalize(outputs['project_features'],  p=2,dim=-1)))
-                    else:
-                        out_sampling_cls = F.softmax(
-                            outputs['sampling_cls_layer'](F.normalize(outputs['project_features'],  p=2,dim=-1)), 2)
         assert len(out_logits) == len(target_sizes)
         assert target_sizes.shape[1] == 2
 
         prob = out_logits.sigmoid()
-        # prob = F.softmax(out_logits, -1)
-        # prob = prob[:, :, :-1]
-        # breakpoint()
-        # topk_values, topk_indexes = torch.topk(prob.reshape(out_logits.shape[0], -1), 100, dim=1)
-        # scores = topk_values
-        # breakpoint()
         topk_indexes = torch.nonzero(prob.reshape(-1) > 0.1).view(1, -1)
         scores = prob.reshape(-1)[topk_indexes[0]].view(1,-1)
 
-        # topk_boxes = topk_indexes // (out_logits.shape[2]-1)
-        # labels = topk_indexes % (out_logits.shape[2]-1)
         topk_boxes = topk_indexes // (out_logits.shape[2])
         labels = topk_indexes % (out_logits.shape[2])
         boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
         boxes1 = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
         original_boxes = torch.gather(out_bbox, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
-        # breakpoint()
-        # print(labels.max())
-        # assert labels.max() < 20
-        new_ped_logits = torch.gather(out_logits, 1, topk_boxes.unsqueeze(-1).repeat(1,1, out_logits.shape[2]))
-        out_pen_features = torch.gather(out_pen_features, 1, topk_boxes.unsqueeze(-1).repeat(1,1, out_pen_features.shape[2]))
-        if 'godin_h' in list(outputs.keys()):
-            out_godin_h = torch.gather(out_godin_h,
-                                                1, topk_boxes.unsqueeze(-1).repeat(1, 1, out_godin_h.shape[2]))
+
+        new_ped_logits = torch.gather(out_logits, 1,
+                                      topk_boxes.unsqueeze(-1).repeat(1,1, out_logits.shape[2]))
+        out_pen_features = torch.gather(out_pen_features, 1,
+                                        topk_boxes.unsqueeze(-1).repeat(1,1, out_pen_features.shape[2]))
+
         if 'project_features' in list(outputs.keys()):
             out_project_features = torch.gather(out_project_features,
                                                 1, topk_boxes.unsqueeze(-1).repeat(1,1, out_project_features.shape[2]))
-            if 'sampling_cls_layer' in list(outputs.keys()):
-                out_sampling_cls = torch.gather(out_sampling_cls, 1, topk_boxes.unsqueeze(-1).repeat(1,1, out_sampling_cls.shape[2]))
+
 
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
-        # breakpoint()
+
         boxes = boxes1 * scale_fct[:, None, :]
 
-
-
-        # breakpoint()
 
         results = [{'scores': s, 'labels': l, 'boxes': b, "original_boxes": ob, "logits_for_ood_eval": new_ped_logits,
                     "pen_features": out_pen_features,
                     "project_features": out_project_features,
-                    'godin_h': out_godin_h,
                     "sampling_cls": out_sampling_cls,
+                    'godin_h': out_godin_h,
                     "am_for_ood": None} \
                 for s, l, b, ob in zip(scores, labels, boxes, original_boxes)]
-        # breakpoint()
+
         return results
 
 
@@ -1783,82 +688,43 @@ class PostProcess(nn.Module):
         out_project_features = None
         out_sampling_cls = None
         out_godin_h = None
-        if 'godin_h' in list(outputs.keys()):
-            out_godin_h = outputs['godin_h']
 
         if 'project_features' in list(outputs.keys()):
             out_project_features = outputs['project_features']
-            if 'sampling_cls_layer' in list(outputs.keys()):
-                if type(outputs['sampling_cls_layer']) == torch.nn.modules.container.Sequential:
-                    out_sampling_cls = F.softmax(
-                        outputs['sampling_cls_layer'](F.normalize(outputs['project_features'], p=2, dim=-1)), 2)
-                elif type(outputs['sampling_cls_layer']) == torch.nn.modules.container.ModuleList:
-                    for index_tmp in range(len(outputs['pred_logits'][0][0])):
-                        out_sampling_cls_tmp = F.sigmoid(
-                            outputs['sampling_cls_layer'][index_tmp](
-                                F.normalize(outputs['project_features'], p=2, dim=-1)))
-                        if out_sampling_cls == None:
-                            out_sampling_cls = out_sampling_cls_tmp
-                        else:
-                            out_sampling_cls = torch.cat((out_sampling_cls, out_sampling_cls_tmp), 2)
-                    # out_sampling_cls = torch.cat((out_sampling_cls.max(-1)[0].unsqueeze(2),
-                    #                               out_sampling_cls.mean(-1).unsqueeze(2)), 2)
-                else:
-                    if outputs['sampling_cls_layer'].weight.shape[0] == 1:
-                        out_sampling_cls = F.sigmoid(
-                            outputs['sampling_cls_layer'](F.normalize(outputs['project_features'],  p=2,dim=-1)))
-                    else:
-                        out_sampling_cls = F.softmax(
-                            outputs['sampling_cls_layer'](F.normalize(outputs['project_features'], p=2, dim=-1)), 2)
+
 
         assert len(out_logits) == len(target_sizes)
         assert target_sizes.shape[1] == 2
 
         prob = out_logits.sigmoid()
-        # prob = F.softmax(out_logits, -1)
-        # prob = prob[:, :, :-1]
-        # breakpoint()
+
         topk_values, topk_indexes = torch.topk(prob.reshape(out_logits.shape[0], -1), len(targets[0]['labels']), dim=1)
         scores = topk_values
-        # breakpoint()
-        # print(targets[0])
-        # topk_indexes = torch.nonzero(prob.reshape(-1) > 0.1).view(1, -1)
-        # scores = prob.reshape(-1)[topk_indexes[0]].view(1,-1)
 
-        # topk_boxes = topk_indexes // (out_logits.shape[2]-1)
-        # labels = topk_indexes % (out_logits.shape[2]-1)
         topk_boxes = topk_indexes // (out_logits.shape[2])
         labels = topk_indexes % (out_logits.shape[2])
         boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
         boxes1 = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
         original_boxes = torch.gather(out_bbox, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
-        # breakpoint()
-        # print(labels.max())
-        # assert labels.max() < 20
+
         new_ped_logits = torch.gather(out_logits, 1, topk_boxes.unsqueeze(-1).repeat(1,1, out_logits.shape[2]))
         out_pen_features = torch.gather(out_pen_features, 1,
                                         topk_boxes.unsqueeze(-1).repeat(1, 1, out_pen_features.shape[2]))
-        # breakpoint()
+
         out_pen_features = torch.cat([out_pen_features, labels.unsqueeze(2)], -1)
-        if 'godin_h' in list(outputs.keys()):
-            out_godin_h = torch.gather(out_godin_h,
-                                                1, topk_boxes.unsqueeze(-1).repeat(1, 1, out_godin_h.shape[2]))
+
         if 'project_features' in list(outputs.keys()):
             out_project_features = torch.gather(out_project_features,
                                                 1, topk_boxes.unsqueeze(-1).repeat(1,1, out_project_features.shape[2]))
             out_project_features = torch.cat([out_project_features, labels.unsqueeze(2)], -1)
-            if 'sampling_cls_layer' in list(outputs.keys()):
-                out_sampling_cls = torch.gather(out_sampling_cls, 1, topk_boxes.unsqueeze(-1).repeat(1,1, out_sampling_cls.shape[2]))
+
 
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
-        # breakpoint()
+
         boxes = boxes1 * scale_fct[:, None, :]
 
-
-
-        # breakpoint()
 
         results = [{'scores': s, 'labels': l, 'boxes': b, "original_boxes": ob, "logits_for_ood_eval": new_ped_logits,
                     "pen_features": out_pen_features,
@@ -1867,7 +733,7 @@ class PostProcess(nn.Module):
                     'godin_h': out_godin_h,
                     "am_for_ood": None} \
                 for s, l, b, ob in zip(scores, labels, boxes, original_boxes)]
-        # breakpoint()
+
         return results
 
 

@@ -46,10 +46,8 @@ def train_one_epoch(model: torch.nn.Module, swav_model: torch.nn.Module, criteri
     # for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
     for _ in metric_logger.log_every(range(len(data_loader)), print_freq, header):
         # breakpoint()
-        if args.csi:
-            outputs = model(samples,targets, epoch)
-        else:
-            outputs = model(samples, epoch=epoch)
+
+        outputs = model(samples, epoch=epoch)
         if swav_model is not None:
             with torch.no_grad():
                 for elem in targets:
@@ -60,9 +58,7 @@ def train_one_epoch(model: torch.nn.Module, swav_model: torch.nn.Module, criteri
             loss_dict = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
-        # breakpoint()
-        # print(weight_dict)
-        # print(loss_dict.keys())
+
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
         loss_dict_reduced_unscaled = {f'{k}_unscaled': v
@@ -101,16 +97,10 @@ def train_one_epoch(model: torch.nn.Module, swav_model: torch.nn.Module, criteri
 @torch.no_grad()
 def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, output_dir, dataset, args):
     model.eval()
-    original_unknown_flag = criterion.args.unknown
-    original_center_flag = criterion.args.center_loss
-    original_csi_flag = criterion.args.csi
-    if original_unknown_flag:
-        criterion.args.unknown = False
-    if original_center_flag:
-        criterion.args.center_loss = False
-    if original_csi_flag:
-        criterion.args.csi = False
-        model.module.args.csi = False
+    original_siren_flag = criterion.args.siren
+    if original_siren_flag:
+        criterion.args.siren = False
+
     criterion.eval()
 
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -219,29 +209,18 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         stats['PQ_all'] = panoptic_res["All"]
         stats['PQ_th'] = panoptic_res["Things"]
         stats['PQ_st'] = panoptic_res["Stuff"]
-    if original_unknown_flag:
-        criterion.args.unknown = True
-    if original_center_flag:
-        criterion.args.center_loss = True
-    if original_csi_flag:
-        criterion.args.csi = True
-        model.module.args.csi = True
+    if original_siren_flag:
+        criterion.args.siren = True
+
     return stats, coco_evaluator
 
 
 @torch.no_grad()
 def evaluate_ood_id(args, model, criterion, postprocessors, data_loader, base_ds, device, output_dir, address, dataset, vis_prediction_results):
     model.eval()
-    original_unknown_flag = criterion.args.unknown
-    original_center_flag = criterion.args.center_loss
-    original_csi_flag = criterion.args.csi
-    if original_unknown_flag:
-        criterion.args.unknown = False
-    if original_center_flag:
-        criterion.args.center_loss = False
-    if original_csi_flag:
-        criterion.args.csi = False
-        model.args.csi = False
+    original_siren_flag = criterion.args.siren
+    if original_siren_flag:
+        criterion.args.siren = False
     criterion.eval()
     all_logits = None
     pen_features = None
@@ -450,16 +429,9 @@ def evaluate_ood_id(args, model, criterion, postprocessors, data_loader, base_ds
 def evaluate_ood_ood(model, criterion, postprocessors, data_loader, base_ds, device, output_dir, address, dataset, vis_prediction_results):
     model.eval()
     criterion.eval()
-    original_unknown_flag = criterion.args.unknown
-    original_center_flag = criterion.args.center_loss
-    original_csi_flag = criterion.args.csi
-    if original_unknown_flag:
-        criterion.args.unknown = False
-    if original_center_flag:
-        criterion.args.center_loss = False
-    if original_csi_flag:
-        criterion.args.csi = False
-        model.args.csi = False
+    original_siren_flag = criterion.args.siren
+    if original_siren_flag:
+        criterion.args.siren = False
     all_logits = None
     pen_features = None
     project_features = None
@@ -606,11 +578,6 @@ def evaluate_ood_ood(model, criterion, postprocessors, data_loader, base_ds, dev
 
             panoptic_evaluator.update(res_pano)
 
-    # breakpoint()
-    # if 'ood' not in dataset:
-    #     np.save(address + 'id-logits.npy', all_logits)
-    #     np.save(address + 'id-pen.npy', pen_features)
-    # else:
     if dataset == 'openimages_ood_val':
         np.save(address + 'ood-open-logits.npy', all_logits)
         np.save(address + 'ood-open-pen.npy', pen_features)

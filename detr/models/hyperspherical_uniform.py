@@ -16,6 +16,7 @@ class HypersphericalUniform(torch.distributions.Distribution):
     def device(self):
         return self._device
 
+
     @device.setter
     def device(self, val):
         self._device = val if isinstance(val, torch.device) else torch.device(val)

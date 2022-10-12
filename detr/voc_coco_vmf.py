@@ -18,13 +18,16 @@ recall_level_default = 0.95
 parser = argparse.ArgumentParser(description='Evaluates an OOD Detector',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--name', default=1., type=str)
-parser.add_argument('--use_trained_params', default=0, type=int)
-parser.add_argument('--pro_length', default=128, type=int)
+parser.add_argument('--use_trained_params', default=1, type=int)
+parser.add_argument('--pro_length', default=16, type=int)
 args = parser.parse_args()
 
 
 name = args.name
-length = args.pro_length
+if args.name == 'siren':
+    length = args.pro_length
+else:
+    length = 256
 
 concat = lambda x: np.concatenate(x, axis=0)
 to_np = lambda x: x.data.cpu().numpy()
@@ -40,15 +43,26 @@ prepos_feat = lambda x: np.ascontiguousarray(np.concatenate([normalizer(x)], axi
 
 
 
-id_train_data = np.load('/nobackup-slow/dataset/my_xfdu/detr_out/exps/' + name + '/id-pro_maha_train.npy')
-id_train_data = torch.from_numpy(id_train_data).reshape(-1, length + 1)
-labels = id_train_data[:, -1].int()
-id_train_data = id_train_data[:, :-1]
 
-all_data_in = np.load('/nobackup-slow/dataset/my_xfdu/detr_out/exps/' + name + '/id-pro.npy')
-all_data_in = torch.from_numpy(all_data_in).reshape(-1, length)
-all_data_out = np.load('/nobackup-slow/dataset/my_xfdu/detr_out/exps/' + name + '/ood-open-pro.npy')
-all_data_out = torch.from_numpy(all_data_out).reshape(-1, length)
+
+if args.name == 'siren':
+    id_train_data = np.load('./snapshots/voc/' + name + '/id-pro_maha_train.npy')
+    id_train_data = torch.from_numpy(id_train_data).reshape(-1, length + 1)
+    labels = id_train_data[:, -1].int()
+    id_train_data = id_train_data[:, :-1]
+    all_data_in = np.load('./snapshots/voc/' + name + '/id-pro.npy')
+    all_data_in = torch.from_numpy(all_data_in).reshape(-1, length)
+    all_data_out = np.load('./snapshots/voc/' + name + '/ood-pro.npy')
+    all_data_out = torch.from_numpy(all_data_out).reshape(-1, length)
+else: # for vanilla
+    id_train_data = np.load('./snapshots/voc/' + name + '/id-pen_maha_train.npy')
+    id_train_data = torch.from_numpy(id_train_data).reshape(-1, length + 1)
+    labels = id_train_data[:, -1].int()
+    id_train_data = id_train_data[:, :-1]
+    all_data_in = np.load('./snapshots/voc/' + name + '/id-pen.npy')
+    all_data_in = torch.from_numpy(all_data_in).reshape(-1, length)
+    all_data_out = np.load('./snapshots/voc/' + name + '/ood-pen.npy')
+    all_data_out = torch.from_numpy(all_data_out).reshape(-1, length)
 
 
 
@@ -112,18 +126,9 @@ print(len(all_data_in))
 from vMF import density
 
 if args.use_trained_params:
-    if args.gpu_option == 1:
-        mean_load = np.load('/nobackup/dataset/my_xfdu/detr_out/exps/' + args.name + '/proto.npy')
-        kappa_load = np.load('/nobackup/dataset/my_xfdu/detr_out/exps/' + args.name + '/kappa.npy')
-        print(kappa_load)
-    elif args.gpu_option == 0:
-        mean_load = np.load('/nobackup-slow/dataset/my_xfdu/detr_out/exps/' + args.name + '/proto.npy')
-        kappa_load = np.load('/nobackup-slow/dataset/my_xfdu/detr_out/exps/' + args.name + '/kappa.npy')
-        print(kappa_load)
-    else:
-        mean_load = np.load('/nobackup/my_xfdu/detr_out/exps/' + args.name + '/proto.npy')
-        kappa_load = np.load('/nobackup/my_xfdu/detr_out/exps/' + args.name + '/kappa.npy')
-        print(kappa_load)
+    mean_load = np.load('./snapshots/voc/' + args.name + '/proto.npy')
+    kappa_load = np.load('./snapshots/voc/' + args.name + '/kappa.npy')
+    print(kappa_load)
 
 gaussian_score = 0
 gaussian_score1 = 0
@@ -178,13 +183,8 @@ all_data_out = prepos_feat(all_data_out)
 
 
 import faiss
-
-# res = faiss.StandardGpuResources()
-#
-# index = faiss.GpuIndexFlatL2(res, id_train_data.shape[1])
 index = faiss.IndexFlatL2(id_train_data.shape[1])
 index.add(id_train_data)
-# index = faiss.IndexFlatL2(id_train_data.shape[1])
 index.add(id_train_data)
 for K in [1, 5, 10 ,20, 50, 100, 200, 300, 400, 500]:
     D, _ = index.search(all_data_in, K)

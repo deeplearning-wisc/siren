@@ -38,7 +38,7 @@ def plot_results(pil_img, prob, boxes, output_dir, classes, targets, ood=False):
     plt.axis('off')
     # plt.show()
     print('hhh')
-    # breakpoint()
+
     if ood:
         plt.savefig(os.path.join(output_dir + '/images_ood', f'img_{int(targets[0]["image_id"][0])}.jpg'))
     else:
