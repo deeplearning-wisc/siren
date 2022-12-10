@@ -39,8 +39,8 @@ The VOC dataset folder should have the following structure:
      └── VOC_DATASET_ROOT
          |
          ├── VOCdevkit/
-         ├── VOC2007
-         └── VOC2012
+              ├── VOC2007
+              └── VOC2012
 
 **COCO**
 
