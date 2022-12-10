@@ -19,16 +19,28 @@ In addition, install detectron2 following [here](https://detectron2.readthedocs.
 
 **PASCAL VOC**
 
-Download the processed VOC 2007 and 2012 dataset from [here](https://drive.google.com/file/d/1n9C4CiBURMSCZy2LStBQTzR17rD_a67e/view?usp=sharing).
+
+
+Download [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) dataset (2012trainval, 2007trainval, and 2007test):
+```bash
+mkdir VOC_DATASET_ROOT
+cd VOC_DATASET_ROOT
+wget http://host.robots.ox.ac.uk:8080/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar
+tar -xvf VOCtrainval_11-May-2012.tar
+tar -xvf VOCtrainval_06-Nov-2007.tar
+tar -xvf VOCtest_06-Nov-2007.tar
+```
 
 The VOC dataset folder should have the following structure:
 <br>
 
      └── VOC_DATASET_ROOT
          |
-         ├── JPEGImages
-         ├── voc0712_train_all.json
-         └── val_coco_format.json
+         ├── VOCdevkit/
+         ├── VOC2007
+         └── VOC2012
 
 **COCO**
 
