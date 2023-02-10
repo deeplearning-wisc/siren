@@ -112,7 +112,7 @@ prefix = '/nobackup/dataset/'
 length = args.length
 
 id_val_data = pickle.load(open(prefix + 'my_xfdu/VOC-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/voc_custom_val/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
-id_val_data = torch.stack(id_val_data['binary_cls']).cpu()
+id_val_data = torch.stack(id_val_data['projections']).cpu()
 
 
 if args.open:
@@ -123,7 +123,7 @@ if args.open:
 else:
     ood_val_data = pickle.load(open(prefix + 'my_xfdu/VOC-Detection/' + args.model + '/'+args.name+'/random_seed'+'_' +str(args.seed)  +'/inference/coco_ood_val/standard_nms/corruption_level_0/probabilistic_scoring_res_odd_'+str(args.thres)+'.pkl', 'rb'))
 # labels_ood = ood_val_data['predicted_cls_id']
-ood_val_data = torch.stack(ood_val_data['binary_cls']).cpu()
+ood_val_data = torch.stack(ood_val_data['projections']).cpu()
 
 
 id = 0
