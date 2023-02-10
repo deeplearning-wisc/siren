@@ -97,9 +97,9 @@ def train_one_epoch(model: torch.nn.Module, swav_model: torch.nn.Module, criteri
 @torch.no_grad()
 def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, output_dir, dataset, args):
     model.eval()
-    original_siren_flag = criterion.args.siren
+    original_siren_flag = criterion.args.siren_evaluate
     if original_siren_flag:
-        criterion.args.siren = False
+        criterion.args.siren_evaluate = False
 
     criterion.eval()
 
@@ -210,7 +210,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         stats['PQ_th'] = panoptic_res["Things"]
         stats['PQ_st'] = panoptic_res["Stuff"]
     if original_siren_flag:
-        criterion.args.siren = True
+        criterion.args.siren_evaluate = True
 
     return stats, coco_evaluator
 
@@ -218,9 +218,9 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
 @torch.no_grad()
 def evaluate_ood_id(args, model, criterion, postprocessors, data_loader, base_ds, device, output_dir, address, dataset, vis_prediction_results):
     model.eval()
-    original_siren_flag = criterion.args.siren
+    original_siren_flag = criterion.args.siren_evaluate
     if original_siren_flag:
-        criterion.args.siren = False
+        criterion.args.siren_evaluate = False
     criterion.eval()
     all_logits = None
     pen_features = None
@@ -429,9 +429,9 @@ def evaluate_ood_id(args, model, criterion, postprocessors, data_loader, base_ds
 def evaluate_ood_ood(model, criterion, postprocessors, data_loader, base_ds, device, output_dir, address, dataset, vis_prediction_results):
     model.eval()
     criterion.eval()
-    original_siren_flag = criterion.args.siren
+    original_siren_flag = criterion.args.siren_evaluate
     if original_siren_flag:
-        criterion.args.siren = False
+        criterion.args.siren_evaluate = False
     all_logits = None
     pen_features = None
     project_features = None

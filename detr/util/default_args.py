@@ -155,6 +155,7 @@ def get_args_parser():
                         help="Relative classification weight of the no-object class")
     # siren
     parser.add_argument('--siren', action='store_true')
+    parser.add_argument('--siren_evaluate', action='store_true')
     parser.add_argument('--project_dim', default=128, type=int)
     parser.add_argument('--vmf_weight', type=float, default=1.0)
     parser.add_argument('--eval_bdd', action='store_true')

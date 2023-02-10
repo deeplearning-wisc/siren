@@ -325,7 +325,7 @@ class SetCriterion(nn.Module):
 
         target_classes_onehot = target_classes_onehot[:,:,:-1]
 
-        if self.args.siren:
+        if self.args.siren and self.args.siren_evaluate:
             if len(idx[0]) != 0:
                 id_samples = outputs['project_features'][idx]
                 for index in range(len(target_classes_o)):

@@ -18,6 +18,7 @@ if [ "$1" = "voc_id" ]; then
        --project_dim 16 \
        --vmf_weight 1.5 \
       --siren \
+      --siren_evaluate \
      ${PY_ARGS}
 elif [ "$1" = "coco_ood" ]; then
   python -u main.py --output_dir ${EXP_DIR} \
@@ -31,6 +32,7 @@ elif [ "$1" = "coco_ood" ]; then
        --project_dim 16 \
        --vmf_weight 1.5 \
       --siren \
+      --siren_evaluate \
    ${PY_ARGS}
 elif [ "$1" = "openimages_ood" ]; then
   python -u main.py --output_dir ${EXP_DIR} \
@@ -44,6 +46,7 @@ elif [ "$1" = "openimages_ood" ]; then
        --project_dim 16 \
        --vmf_weight 1.5 \
       --siren \
+      --siren_evaluate \
    ${PY_ARGS}
 fi
 
