@@ -34,5 +34,6 @@ elif [ "$1" = "openimages_ood" ]; then
    --eval_every 10 \
    --batch_size 1 \
      --load_backbone dino \
+     --eval_bdd \
      ${PY_ARGS}
 fi
