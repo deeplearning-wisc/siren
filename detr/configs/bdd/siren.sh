@@ -47,6 +47,7 @@ elif [ "$1" = "openimages_ood" ]; then
        --vmf_weight 1.5 \
       --siren \
       --siren_evaluate \
+      --eval_bdd \
    ${PY_ARGS}
 fi
 
