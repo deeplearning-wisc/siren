@@ -22,7 +22,7 @@ from .transformer import build_transformer
 def build_model(args):
     if args.dataset_file == 'coco':
         if args.dataset == 'coco_ood_val' or args.dataset == 'openimages_ood_val':
-            if arg.eval_bdd:
+            if args.eval_bdd:
                 num_classes = 10
             else:
                 num_classes = 20
